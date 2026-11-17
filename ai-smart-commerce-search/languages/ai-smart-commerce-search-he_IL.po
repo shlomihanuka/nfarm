@@ -1,0 +1,103 @@
+# AI Smart Commerce Search — Hebrew (Israel) translations
+# Copyright (C) 2026 MYCO Platform
+# This file is distributed under the same license as the plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: AI Smart Commerce Search 0.1.0\n"
+"POT-Creation-Date: 2026-11-17\n"
+"PO-Revision-Date: 2026-11-17\n"
+"Language: he_IL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "AI Commerce"
+msgstr "AI Commerce"
+
+msgid "AI Commerce — Settings"
+msgstr "AI Commerce — הגדרות"
+
+msgid "Enable AI Smart Search"
+msgstr "הפעל חיפוש חכם AI"
+
+msgid "Enable the AI search drawer (uncheck to restore native WordPress/WooCommerce search)"
+msgstr "הפעל את מגירת החיפוש של AI (בטל סימון כדי לחזור לחיפוש הרגיל של WordPress/WooCommerce)"
+
+msgid "Save Settings"
+msgstr "שמור הגדרות"
+
+msgid "Settings saved successfully."
+msgstr "ההגדרות נשמרו בהצלחה."
+
+msgid "Step 1 — Google Cloud Project"
+msgstr "שלב 1 — פרויקט Google Cloud"
+
+msgid "Google Cloud Project ID"
+msgstr "מזהה פרויקט Google Cloud"
+
+msgid "Environment"
+msgstr "סביבה"
+
+msgid "Development"
+msgstr "פיתוח"
+
+msgid "Staging"
+msgstr "הכנה"
+
+msgid "Production"
+msgstr "ייצור"
+
+msgid "Region"
+msgstr "אזור"
+
+msgid "Tenant ID"
+msgstr "מזהה דייר"
+
+msgid "Step 2 — Backend Connection"
+msgstr "שלב 2 — חיבור Backend"
+
+msgid "Cloud API Base URL"
+msgstr "כתובת ה-API הבסיסית בענן"
+
+msgid "Authentication Method"
+msgstr "שיטת אימות"
+
+msgid "API Key"
+msgstr "מפתח API"
+
+msgid "Service Account"
+msgstr "חשבון שירות"
+
+msgid "Test Connection"
+msgstr "בדוק חיבור"
+
+msgid "Connected"
+msgstr "מחובר"
+
+msgid "Authentication Failed"
+msgstr "אימות נכשל"
+
+msgid "Permission Missing"
+msgstr "חסרה הרשאה"
+
+msgid "API Unavailable"
+msgstr "ה-API אינו זמין"
+
+msgid "WooCommerce API Credentials"
+msgstr "פרטי גישה ל-WooCommerce API"
+
+msgid "Consumer Key"
+msgstr "מפתח צרכן"
+
+msgid "Consumer Secret"
+msgstr "סוד צרכן"
+
+msgid "הקלד לחיפוש מוצרים"
+msgstr "הקלד לחיפוש מוצרים"
+
+msgid "שגיאה בהוספה לסל"
+msgstr "שגיאה בהוספה לסל"
+
+msgid "יש לבחור את כל האפשרויות"
+msgstr "יש לבחור את כל האפשרויות"
