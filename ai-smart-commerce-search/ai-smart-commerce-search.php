@@ -50,6 +50,7 @@ require_once ASC_PLUGIN_DIR . 'includes/class-asc-settings.php';
 require_once ASC_PLUGIN_DIR . 'includes/class-asc-search.php';
 require_once ASC_PLUGIN_DIR . 'includes/class-asc-woocommerce.php';
 require_once ASC_PLUGIN_DIR . 'includes/class-asc-cloud.php';
+require_once ASC_PLUGIN_DIR . 'includes/class-asc-voice.php';
 
 if ( is_admin() ) {
     require_once ASC_PLUGIN_DIR . 'admin/class-asc-admin.php';
@@ -73,6 +74,7 @@ function asc_init() {
     ASC_Search::instance();
     ASC_WooCommerce::instance();
     ASC_Cloud::instance();
+    ASC_Voice::instance();
 
     if ( is_admin() ) {
         ASC_Admin::instance();

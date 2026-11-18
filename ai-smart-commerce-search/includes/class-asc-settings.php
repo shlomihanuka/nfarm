@@ -26,6 +26,8 @@ class ASC_Settings {
             'cloud_region'     => 'us-central1',
             'cloud_tenant_id'  => '',
             'cloud_api_url'    => '',
+            'voice_enabled'    => true,
+            'stt_api_key'      => '',
         ];
     }
 
@@ -56,5 +58,11 @@ class ASC_Settings {
     public function is_cloud_configured(): bool {
         return ! empty( $this->get( 'cloud_project_id' ) )
             && ! empty( $this->get( 'cloud_api_url' ) );
+    }
+
+    /** Is voice search enabled and an STT API key present? */
+    public function is_voice_configured(): bool {
+        return (bool) $this->get( 'voice_enabled', true )
+            && ! empty( $this->get( 'stt_api_key' ) );
     }
 }
