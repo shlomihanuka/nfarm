@@ -1,0 +1,199 @@
+# Hebrew translation for AI Smart Commerce Search
+# Copyright (C) 2026 MYCO
+# This file is distributed under the same license as the plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: AI Smart Commerce Search 0.1.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-18 00:00+0200\n"
+"PO-Revision-Date: 2026-11-18 00:00+0200\n"
+"Last-Translator: MYCO <support@notax.co.il>\n"
+"Language-Team: Hebrew <LL@li.org>\n"
+"Language: he_IL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n==1 ? 0 : n==2 ? 1 : n>10 && n%10==0 ? 2 : 3);\n"
+"X-Generator: MYCO\n"
+"X-Domain: ai-smart-commerce-search\n"
+
+#. Plugin Name of the plugin
+msgid "AI Smart Commerce Search"
+msgstr "חיפוש חכם לחנות"
+
+#. Description of the plugin
+msgid "AI-driven search, substitutes, recommendations and purchase assistance for WooCommerce stores."
+msgstr "חיפוש מונחה בינה מלאכותית, תחליפים, המלצות וסיוע ברכישה לחנויות WooCommerce."
+
+#: ai-smart-commerce-search.php
+msgid "AI Smart Commerce Search requires WooCommerce. Please install and activate it."
+msgstr "חיפוש חכם לחנות דורש WooCommerce. אנא התקן והפעל אותו."
+
+#: includes/class-asc-search.php
+msgid "Search for products"
+msgstr "חפש מוצרים"
+
+#: includes/class-asc-search.php
+msgid "No products found"
+msgstr "לא נמצאו מוצרים"
+
+#: includes/class-asc-search.php
+msgid "Add to cart"
+msgstr "הוסף לסל"
+
+#: includes/class-asc-search.php
+msgid "Adding\xe2\x80\xa6"
+msgstr "מוסיף\xe2\x80\xa6"
+
+#: includes/class-asc-search.php
+msgid "Added to cart"
+msgstr "נוסף לסל"
+
+#: includes/class-asc-search.php
+msgid "Error adding to cart"
+msgstr "שגיאה בהוספה לסל"
+
+#: includes/class-asc-search.php
+msgid "Please select all options"
+msgstr "יש לבחור את כל האפשרויות"
+
+#: includes/class-asc-search.php
+msgid "In stock"
+msgstr "במלאי"
+
+#: includes/class-asc-search.php
+msgid "Out of stock"
+msgstr "אזל מהמלאי"
+
+#: includes/class-asc-search.php
+msgid "Quantity"
+msgstr "כמות"
+
+#: includes/class-asc-search.php
+msgid "Close search"
+msgstr "סגור חיפוש"
+
+#: includes/class-asc-search.php
+msgid "Searching\xe2\x80\xa6"
+msgstr "מחפש\xe2\x80\xa6"
+
+#: includes/class-asc-search.php
+msgid "Final price depends on actual weight at time of purchase."
+msgstr "המחיר הסופי נקבע לפי המשקל בפועל בעת הרכישה."
+
+#: includes/class-asc-cloud.php
+msgid "Cloud API URL and Project ID are required."
+msgstr "נדרשים כתובת API לענן ומזהה פרויקט."
+
+#: includes/class-asc-cloud.php
+msgid "Connected"
+msgstr "מחובר"
+
+#: includes/class-asc-cloud.php
+msgid "Authentication Failed"
+msgstr "אימות נכשל"
+
+#: includes/class-asc-cloud.php
+msgid "Permission Missing"
+msgstr "אין הרשאה"
+
+#: includes/class-asc-cloud.php
+#, php-format
+msgid "API Unavailable (HTTP %d)"
+msgstr "ה-API אינו זמין (HTTP %d)"
+
+#: admin/class-asc-admin.php
+msgid "AI Smart Search Settings"
+msgstr "הגדרות חיפוש חכם"
+
+#: admin/class-asc-admin.php
+msgid "AI Smart Search"
+msgstr "חיפוש חכם"
+
+#: admin/class-asc-admin.php
+msgid "You do not have permission to access this page."
+msgstr "אין לך הרשאה לגשת לדף זה."
+
+#: admin/class-asc-admin.php
+msgid "Insufficient permissions."
+msgstr "הרשאות לא מספקות."
+
+#: admin/class-asc-admin.php
+msgid "Settings saved."
+msgstr "ההגדרות נשמרו."
+
+#: admin/class-asc-admin.php
+msgid "Testing\xe2\x80\xa6"
+msgstr "בודק\xe2\x80\xa6"
+
+#: admin/class-asc-admin.php
+msgid "API Unavailable"
+msgstr "ה-API אינו זמין"
+
+#: admin/class-asc-admin.php
+msgid "Not Configured"
+msgstr "לא מוגדר"
+
+#: admin/views/settings.php
+msgid "Search Drawer"
+msgstr "חלונית החיפוש"
+
+#: admin/views/settings.php
+msgid "Enable AI Smart Search"
+msgstr "הפעלת חיפוש חכם"
+
+#: admin/views/settings.php
+msgid "Uncheck to disable the drawer and restore native site search."
+msgstr "בטל סימון להשבתת החלונית ולשחזור חיפוש האתר המובנה."
+
+#: admin/views/settings.php
+msgid "Cloud Setup"
+msgstr "הגדרות ענן"
+
+#: admin/views/settings.php
+msgid "Leave blank to run in local-search-only mode (no AI features)."
+msgstr "השאר ריק להפעלה במצב חיפוש מקומי בלבד (ללא תכונות AI)."
+
+#: admin/views/settings.php
+msgid "Project ID"
+msgstr "מזהה פרויקט"
+
+#: admin/views/settings.php
+msgid "Environment"
+msgstr "סביבה"
+
+#: admin/views/settings.php
+msgid "Production"
+msgstr "ייצור"
+
+#: admin/views/settings.php
+msgid "Testing"
+msgstr "בדיקות"
+
+#: admin/views/settings.php
+msgid "Development"
+msgstr "פיתוח"
+
+#: admin/views/settings.php
+msgid "Region"
+msgstr "אזור"
+
+#: admin/views/settings.php
+msgid "Tenant ID"
+msgstr "מזהה לקוח"
+
+#: admin/views/settings.php
+msgid "Cloud API Base URL"
+msgstr "כתובת API בסיסית לענן"
+
+#: admin/views/settings.php
+msgid "Cloud Run service URL. Leave empty to run in local mode."
+msgstr "כתובת שירות Cloud Run. השאר ריק להפעלה במצב מקומי."
+
+#: admin/views/settings.php
+msgid "Connection Check"
+msgstr "בדיקת חיבור"
+
+#: admin/views/settings.php
+msgid "Save Settings"
+msgstr "שמירת הגדרות"

@@ -1,0 +1,6 @@
+.credentials/
+*.zip
+node_modules/
+
+# Keep the zip in git for delivery
+!ai-smart-commerce-search-*.zip

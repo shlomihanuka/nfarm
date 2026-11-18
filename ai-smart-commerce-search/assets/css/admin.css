@@ -1,0 +1,41 @@
+/* AI Smart Commerce Search — Admin styles */
+.asc-settings-wrap {
+  max-width: 760px;
+  direction: rtl;
+}
+.asc-wizard-step {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.asc-step-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+}
+.asc-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.asc-test-result {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: 10px;
+  font-weight: 600;
+}
+.asc-test-result.asc-ok   { color: #16a34a; }
+.asc-test-result.asc-fail { color: #dc2626; }

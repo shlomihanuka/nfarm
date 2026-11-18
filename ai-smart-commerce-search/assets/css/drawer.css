@@ -1,0 +1,304 @@
+/* ==========================================================
+   AI Smart Commerce Search — Drawer Styles
+   RTL-first, mobile-aware.
+   ========================================================== */
+
+/* ---- Overlay ---- */
+.asc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 99998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.asc-overlay.asc-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---- Drawer container ---- */
+.asc-drawer {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  width: min(680px, 95vw);
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  /* RTL default */
+  direction: rtl;
+  font-family: inherit;
+}
+.asc-drawer.asc-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* -- Header (search field pinned at top) -- */
+.asc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+.asc-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  direction: rtl;
+  background: transparent;
+  color: #111;
+}
+.asc-search-input::placeholder {
+  color: #9ca3af;
+}
+.asc-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  border-radius: 50%;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.asc-close-btn:hover {
+  background: #f3f4f6;
+  color: #111;
+}
+.asc-close-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* -- Status bar -- */
+.asc-status {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  color: #6b7280;
+  flex-shrink: 0;
+  min-height: 32px;
+}
+.asc-status.asc-error {
+  color: #dc2626;
+}
+
+/* -- Results list -- */
+.asc-results {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 12px 16px;
+}
+.asc-results:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+/* -- Product card -- */
+.asc-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 8px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.15s;
+}
+.asc-card:last-child {
+  border-bottom: none;
+}
+.asc-card:hover,
+.asc-card:focus-within {
+  background: #f9fafb;
+}
+.asc-card-image {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: #f3f4f6;
+}
+.asc-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.asc-card-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+.asc-card-name a {
+  color: inherit;
+  text-decoration: none;
+}
+.asc-card-name a:hover {
+  text-decoration: underline;
+}
+.asc-card-price {
+  font-size: 0.95rem;
+  color: #374151;
+  margin-bottom: 4px;
+}
+.asc-card-price ins {
+  text-decoration: none;
+}
+.asc-card-weight-note {
+  font-size: 0.78rem;
+  color: #f59e0b;
+  font-style: italic;
+  margin-bottom: 4px;
+}
+.asc-card-stock {
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+.asc-card-stock.in-stock  { color: #16a34a; }
+.asc-card-stock.out-of-stock { color: #dc2626; }
+
+/* -- Variations -- */
+.asc-variations {
+  margin-bottom: 8px;
+}
+.asc-variation-select {
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  display: block;
+  direction: rtl;
+  width: 100%;
+  max-width: 220px;
+  background: #fff;
+}
+
+/* -- Quantity + Add-to-cart row -- */
+.asc-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.asc-qty-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.asc-qty-btn {
+  background: #f9fafb;
+  border: none;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #374151;
+  transition: background 0.15s;
+}
+.asc-qty-btn:hover { background: #e5e7eb; }
+.asc-qty-input {
+  width: 36px;
+  text-align: center;
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  -moz-appearance: textfield;
+}
+.asc-qty-input::-webkit-inner-spin-button,
+.asc-qty-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+.asc-add-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+.asc-add-btn:hover:not(:disabled) { background: #1d4ed8; }
+.asc-add-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.asc-add-btn.asc-added { background: #16a34a; }
+.asc-add-btn.asc-error { background: #dc2626; }
+
+/* ---- Mobile ---- */
+@media (max-width: 600px) {
+  .asc-drawer {
+    width: 100vw;
+    max-height: 92svh; /* svh respects the keyboard */
+    border-radius: 16px 16px 0 0;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    transform: translateY(12px);
+  }
+  .asc-drawer.asc-open {
+    transform: translateY(0);
+  }
+  .asc-card-image {
+    width: 60px;
+    height: 60px;
+  }
+  .asc-add-btn {
+    padding: 8px 16px;
+    font-size: 0.95rem;
+    min-height: 44px; /* touch target */
+  }
+  .asc-qty-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
+/* ---- Focus rings (a11y) ---- */
+.asc-add-btn:focus-visible,
+.asc-close-btn:focus-visible,
+.asc-qty-btn:focus-visible,
+.asc-search-input:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* ---- Spinner ---- */
+.asc-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.12);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: asc-spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-inline-end: 6px;
+}
+@keyframes asc-spin {
+  to { transform: rotate(360deg); }
+}
