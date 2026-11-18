@@ -31,7 +31,7 @@ msgstr "חיפוש חכם לחנות דורש WooCommerce. אנא התקן וה�
 
 #: includes/class-asc-search.php
 msgid "What are you looking for? E.g. \"Shabbat dinner for five, on sale\""
-msgstr "מה אתם מחפשים? לדוגמה: \"ארוחת שבת לחמישה, במבצע\""
+msgstr "מה תרצו למצוא היום? אפשר לשאול אותי חופשי..."
 
 #: includes/class-asc-search.php
 msgid "No products found"

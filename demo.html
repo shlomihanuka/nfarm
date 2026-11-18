@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Smart Commerce Search — V3 Demo (חוות נעמי)</title>
+<style>
+/* ---- Mock WooCommerce store theme ---- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  direction: rtl;
+  background: #f8f5f0;
+  color: #1a1a1a;
+  min-height: 100vh;
+}
+
+/* Site header */
+.site-header {
+  background: #2d5016;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+.site-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.site-logo {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  text-decoration: none;
+  flex-shrink: 0;
+  letter-spacing: -0.5px;
+}
+.site-logo span { color: #a3e635; }
+.site-nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  margin-inline-start: 16px;
+}
+.site-nav a {
+  color: rgba(255,255,255,0.82);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.site-nav a:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* Search bar in header */
+.header-search {
+  flex: 1;
+  max-width: 380px;
+  position: relative;
+}
+.header-search input[type="search"] {
+  width: 100%;
+  padding: 9px 16px 9px 40px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  outline: none;
+  direction: rtl;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.header-search input::placeholder { color: rgba(255,255,255,0.6); }
+.header-search input:focus { background: rgba(255,255,255,0.22); }
+.header-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,0.6);
+  pointer-events: none;
+}
+.header-search-icon svg { display: block; width: 16px; height: 16px; }
+
+.cart-btn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.cart-btn:hover { background: rgba(255,255,255,0.22); }
+
+/* Hero banner */
+.hero {
+  background: linear-gradient(135deg, #3a6b1c 0%, #2d5016 50%, #1a3009 100%);
+  padding: 48px 24px;
+  text-align: center;
+  color: #fff;
+}
+.hero h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+}
+.hero p {
+  font-size: 1.05rem;
+  color: rgba(255,255,255,0.78);
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* Category strips */
+.main-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+}
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2d5016;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: #e5e7eb;
+  border-radius: 2px;
+}
+
+/* Fake product grid (behind the drawer) */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+@media (max-width: 700px) {
+  .product-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero h1 { font-size: 1.4rem; }
+  .site-nav { display: none; }
+}
+.fake-card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+.fake-card-img {
+  height: 140px;
+  background: #f0ede6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+}
+.fake-card-body {
+  padding: 12px;
+}
+.fake-card-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 4px;
+}
+.fake-card-price {
+  font-size: 0.9rem;
+  color: #2d5016;
+  font-weight: 700;
+}
+
+/* Demo notice */
+.demo-notice {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  color: #92400e;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* ============================================================
+   DRAWER CSS — copied verbatim from assets/css/drawer.css
+   ============================================================ */
+:root {
+  --asc-header-offset: 0px;
+  --asc-radius: 16px;
+  --asc-shadow: 0 12px 40px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --asc-blue: #2563eb;
+  --asc-blue-light: #eff6ff;
+  --asc-blue-mid: #dbeafe;
+  --asc-green: #16a34a;
+  --asc-red: #dc2626;
+  --asc-amber: #f59e0b;
+  --asc-gray-50: #f9fafb;
+  --asc-gray-100: #f3f4f6;
+  --asc-gray-200: #e5e7eb;
+  --asc-gray-400: #9ca3af;
+  --asc-gray-500: #6b7280;
+  --asc-gray-700: #374151;
+  --asc-gray-900: #111827;
+}
+.asc-drawer *, .asc-drawer *::before, .asc-drawer *::after { box-sizing: border-box; }
+.asc-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.42); z-index: 99998;
+  opacity: 0; pointer-events: none; transition: opacity 0.22s ease;
+}
+.asc-overlay.asc-visible { opacity: 1; pointer-events: auto; }
+.asc-drawer {
+  position: fixed;
+  top: var(--asc-header-offset);
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  width: min(1240px, 92vw);
+  max-height: min(80vh, calc(100svh - var(--asc-header-offset) - 16px));
+  background: #ffffff;
+  border-radius: 0 0 var(--asc-radius) var(--asc-radius);
+  box-shadow: var(--asc-shadow);
+  z-index: 99999;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  direction: rtl;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  color: var(--asc-gray-900);
+  line-height: 1.5; font-size: 16px;
+}
+.asc-drawer.asc-open {
+  opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0);
+}
+.asc-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--asc-gray-200); flex-shrink: 0;
+}
+.asc-search-input {
+  flex: 1; border: none; outline: none; font-size: 1.05rem;
+  line-height: 1.5; direction: rtl; background: transparent;
+  color: var(--asc-gray-900); font-family: inherit; min-width: 0;
+}
+.asc-search-input::placeholder { color: var(--asc-gray-400); }
+.asc-close-btn {
+  background: none; border: none; cursor: pointer; padding: 6px;
+  color: var(--asc-gray-500); display: flex; align-items: center;
+  justify-content: center; border-radius: 50%; transition: background 0.15s;
+  flex-shrink: 0; line-height: 0;
+}
+.asc-close-btn:hover { background: var(--asc-gray-100); color: var(--asc-gray-900); }
+.asc-close-btn svg { width: 20px; height: 20px; display: block; }
+.asc-ai-bar {
+  display: none; align-items: center; gap: 9px;
+  padding: 8px 20px;
+  background: var(--asc-blue-light); border-bottom: 1px solid var(--asc-blue-mid);
+  flex-shrink: 0; min-height: 36px;
+}
+.asc-ai-bar.asc-active { display: flex; }
+.asc-ai-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--asc-blue); flex-shrink: 0;
+  animation: asc-pulse 1.4s ease-in-out infinite;
+}
+.asc-ai-text { font-size: 0.82rem; color: var(--asc-blue); font-weight: 500; font-family: inherit; }
+@keyframes asc-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.38; transform: scale(0.75); }
+}
+.asc-status { padding: 6px 20px; font-size: 0.84rem; color: var(--asc-gray-500); flex-shrink: 0; }
+.asc-status:empty { display: none; }
+.asc-status.asc-error { color: var(--asc-red); }
+.asc-results {
+  flex: 1; overflow-y: auto; overscroll-behavior: contain;
+  padding: 16px 20px;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-content: start;
+}
+.asc-results:focus { outline: 2px solid var(--asc-blue); outline-offset: -2px; }
+.asc-show-more, .asc-no-results { grid-column: 1 / -1; }
+.asc-card {
+  display: flex; align-items: flex-start; gap: 12px; padding: 14px;
+  border: 1px solid var(--asc-gray-200); border-radius: 12px; background: #fff;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.asc-card:hover, .asc-card:focus-within {
+  border-color: #c7d2fe; box-shadow: 0 2px 10px rgba(37,99,235,0.09);
+}
+.asc-card-image {
+  width: 88px; height: 88px; object-fit: cover; border-radius: 8px;
+  flex-shrink: 0; background: var(--asc-gray-100); display: block; font-size: 2.2rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.asc-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.asc-card-name { font-size: 0.95rem; font-weight: 600; color: var(--asc-gray-900); line-height: 1.3; }
+.asc-card-name a { color: inherit; text-decoration: none; }
+.asc-card-name a:hover { text-decoration: underline; }
+.asc-card-reason { font-size: 0.78rem; color: #6366f1; font-style: italic; line-height: 1.3; }
+.asc-card-price { font-size: 0.95rem; color: var(--asc-gray-700); font-weight: 600; }
+.asc-card-price ins { text-decoration: none; }
+.asc-card-price del { font-weight: 400; color: var(--asc-gray-400); font-size: 0.85em; margin-inline-start: 4px; }
+.asc-stock-badge {
+  display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 600;
+  padding: 2px 8px; border-radius: 20px; line-height: 1.4; width: fit-content;
+}
+.asc-stock-badge.in-stock  { background: #dcfce7; color: #15803d; }
+.asc-stock-badge.out-of-stock { background: #fee2e2; color: #b91c1c; }
+.asc-card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.asc-qty-wrapper {
+  display: flex; align-items: center; border: 1px solid var(--asc-gray-200);
+  border-radius: 8px; overflow: hidden; flex-shrink: 0;
+}
+.asc-qty-btn {
+  background: var(--asc-gray-50); border: none; padding: 4px 10px; cursor: pointer;
+  font-size: 1rem; color: var(--asc-gray-700); transition: background 0.12s; line-height: 1;
+}
+.asc-qty-btn:hover { background: var(--asc-gray-200); }
+.asc-qty-input {
+  width: 36px; text-align: center; border: none; outline: none;
+  font-size: 0.9rem; -moz-appearance: textfield; color: var(--asc-gray-900); background: #fff;
+}
+.asc-qty-input::-webkit-inner-spin-button, .asc-qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.asc-add-btn {
+  flex: 1; min-width: 80px; background: var(--asc-blue); color: #fff; border: none;
+  border-radius: 8px; padding: 7px 14px; font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; transition: background 0.15s, opacity 0.15s; white-space: nowrap;
+  font-family: inherit; text-align: center; line-height: 1.4;
+}
+.asc-add-btn:hover:not(:disabled) { background: #1d4ed8; }
+.asc-add-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.asc-add-btn.asc-added { background: var(--asc-green); }
+.asc-add-btn.asc-error  { background: var(--asc-red); }
+.asc-card.asc-skeleton { pointer-events: none; }
+.asc-skeleton .asc-card-image, .asc-skel-line, .asc-skel-btn {
+  background: linear-gradient(270deg,#f0f0f0 25%,#e4e4e4 50%,#f0f0f0 75%);
+  background-size: 400% 100%; animation: asc-shimmer 1.7s ease-in-out infinite; border-radius: 6px;
+}
+.asc-skeleton .asc-card-image { border-radius: 8px; }
+.asc-skel-line { height: 13px; width: 80%; margin-bottom: 8px; display: block; }
+.asc-skel-line.asc-skel-sm { width: 50%; height: 10px; }
+.asc-skel-btn { height: 32px; margin-top: 6px; display: block; border-radius: 8px; }
+@keyframes asc-shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+.asc-show-more {
+  display: block; width: 100%; padding: 11px; background: none;
+  border: 1px dashed var(--asc-gray-200); border-radius: 10px;
+  color: var(--asc-blue); font-size: 0.88rem; font-weight: 600; cursor: pointer;
+  text-align: center; transition: background 0.15s, border-color 0.15s; font-family: inherit; margin-top: 4px;
+}
+.asc-show-more:hover { background: var(--asc-blue-light); border-color: #93c5fd; }
+.asc-no-results { color: var(--asc-gray-500); font-size: 0.9rem; padding: 28px 0; text-align: center; }
+.asc-chips {
+  display: none; flex-wrap: wrap; gap: 8px; padding: 12px 20px;
+  border-top: 1px solid var(--asc-gray-100); flex-shrink: 0;
+}
+.asc-chips.asc-visible { display: flex; }
+.asc-chip {
+  background: var(--asc-gray-100); border: 1px solid var(--asc-gray-200);
+  color: var(--asc-gray-700); font-size: 0.82rem; font-weight: 500;
+  border-radius: 20px; padding: 5px 14px; cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s; font-family: inherit;
+  white-space: nowrap; line-height: 1.4;
+}
+.asc-chip:hover { background: var(--asc-blue-light); border-color: #93c5fd; color: var(--asc-blue); }
+.asc-add-btn:focus-visible, .asc-close-btn:focus-visible,
+.asc-qty-btn:focus-visible, .asc-search-input:focus-visible,
+.asc-chip:focus-visible, .asc-show-more:focus-visible { outline: 2px solid var(--asc-blue); outline-offset: 2px; }
+@media (max-width: 539px) {
+  .asc-drawer {
+    width: 100vw; max-height: 94svh;
+    border-radius: var(--asc-radius) var(--asc-radius) 0 0;
+    top: auto; bottom: 0; left: 0; transform: translateY(14px);
+  }
+  .asc-drawer.asc-open { transform: translateY(0); }
+  .asc-results { grid-template-columns: 1fr; padding: 12px 14px; gap: 10px; }
+  .asc-card-image { width: 72px; height: 72px; }
+  .asc-add-btn { padding: 10px 14px; font-size: 0.95rem; min-height: 44px; }
+  .asc-qty-btn { min-width: 40px; min-height: 40px; }
+  .asc-header { padding: 12px 16px; }
+  .asc-chips { padding: 10px 14px; }
+  .asc-ai-bar { padding: 7px 16px; }
+}
+@media (max-width: 700px) and (min-width: 540px) {
+  .asc-results { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     MOCK SITE — represents nfarmcoil2stg.wpenginepowered.com theme
+     ================================================================ -->
+<header class="site-header">
+  <div class="site-header-inner">
+    <a href="#" class="site-logo">חוות <span>נעמי</span></a>
+    <nav class="site-nav">
+      <a href="#">כל המוצרים</a>
+      <a href="#">גבינות</a>
+      <a href="#">שמנים</a>
+      <a href="#">דבש</a>
+      <a href="#">מבצעים</a>
+    </nav>
+    <div class="header-search">
+      <span class="header-search-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+        </svg>
+      </span>
+      <input type="search" name="s" placeholder="חיפוש מוצרים..." id="native-search">
+    </div>
+    <button class="cart-btn">
+      🛒 סל קניות
+      <span style="background:#a3e635;color:#1a3009;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;">2</span>
+    </button>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>המוצרים הטובים ביותר מהחווה לשולחנכם</h1>
+  <p>גבינות, שמנים, דבש ועוד — ישירות מהחקלאים</p>
+</div>
+
+<div class="main-content">
+  <div class="demo-notice">
+    🎯 <strong>DEMO — V3 UX R2</strong> — הדרואר נפתח אוטומטית כדי להראות את הממשק. לחצו על שדה החיפוש בפינה כדי לפתוח אותו שוב לאחר סגירה.
+  </div>
+
+  <div class="section-title">מוצרי הבית</div>
+  <div class="product-grid">
+    <div class="fake-card"><div class="fake-card-img">🧀</div><div class="fake-card-body"><div class="fake-card-name">גבינה צהובה עגולה</div><div class="fake-card-price">₪38</div></div></div>
+    <div class="fake-card"><div class="fake-card-img">🫒</div><div class="fake-card-body"><div class="fake-card-name">שמן זית כתית מעולה</div><div class="fake-card-price">₪56</div></div></div>
+    <div class="fake-card"><div class="fake-card-img">🍯</div><div class="fake-card-body"><div class="fake-card-name">דבש פרחי שדה</div><div class="fake-card-price">₪42</div></div></div>
+    <div class="fake-card"><div class="fake-card-img">🥛</div><div class="fake-card-body"><div class="fake-card-name">יוגורט ביתי</div><div class="fake-card-price">₪14</div></div></div>
+  </div>
+
+  <div class="section-title">מבצעים השבוע</div>
+  <div class="product-grid">
+    <div class="fake-card"><div class="fake-card-img">🧈</div><div class="fake-card-body"><div class="fake-card-name">חמאת חוות נעמי</div><div class="fake-card-price">₪22</div></div></div>
+    <div class="fake-card"><div class="fake-card-img">🐐</div><div class="fake-card-body"><div class="fake-card-name">גבינת עיזים רכה</div><div class="fake-card-price">₪34</div></div></div>
+    <div class="fake-card"><div class="fake-card-img">🌿</div><div class="fake-card-body"><div class="fake-card-name">שמן עשבי תיבול</div><div class="fake-card-price">₪48</div></div></div>
+    <div class="fake-card"><div class="fake-card-img">🧆</div><div class="fake-card-body"><div class="fake-card-name">ממרח גבינה מעושנת</div><div class="fake-card-price">₪29</div></div></div>
+  </div>
+</div>
+
+<!-- ================================================================
+     DRAWER — built by JS below, opened automatically on page load
+     ================================================================ -->
+<script>
+/* ----------------------------------------------------------------
+   ascConfig mock — simulates what WordPress wp_localize_script injects
+---------------------------------------------------------------- */
+window.ascConfig = {
+  restUrl:  '/wp-json/asc/v1',
+  storeApi: '/wp-json/wc/store/v1',
+  nonce:    'demo-nonce',
+  locale:   'he_IL',
+  isRtl:    true,
+  currency: '₪',
+  i18n: {
+    placeholder:   'מה תרצו למצוא היום? אפשר לשאול אותי חופשי...',
+    noResults:     'לא נמצאו מוצרים',
+    addToCart:     'הוסף לסל',
+    addingToCart:  'מוסיף...',
+    addedToCart:   'נוסף לסל!',
+    errorAdding:   'שגיאה',
+    selectOptions: 'יש לבחור את כל האפשרויות',
+    inStock:       'במלאי',
+    outOfStock:    'אזל מהמלאי',
+    quantity:      'כמות',
+    close:         'סגור חיפוש',
+    searching:     'מחפש...',
+    aiThinking:    'AI מנתח את הבקשה...',
+    aiFetching:    'AI מחפש מוצרים רלוונטיים...',
+    aiRanking:     'AI מדרג תוצאות עבורך...',
+    drawerLabel:   'חיפוש מוצרים',
+    resultsLabel:  'תוצאות חיפוש',
+  },
+};
+
+/* ----------------------------------------------------------------
+   MOCK SEARCH — intercepts fetch('/wp-json/asc/v1/search?q=...')
+   and returns realistic demo product data with AI fields.
+   Track A (fast) returns in ~180ms; Track B (AI) returns in ~1400ms.
+---------------------------------------------------------------- */
+(function patchFetch() {
+  var orig = window.fetch.bind(window);
+  window.fetch = function(url, opts) {
+    if (typeof url === 'string' && url.includes('/asc/v1/search')) {
+      var params  = new URL(url, location.href);
+      var q       = params.searchParams.get('q') || '';
+      var trackB  = params.searchParams.get('track') === 'b';
+      var delay   = trackB ? 1400 : 180;
+      var source  = trackB ? 'cloud' : 'local';
+
+      return new Promise(function(resolve, reject) {
+        var ctrl = opts && opts.signal;
+        if (ctrl) {
+          ctrl.addEventListener('abort', function() {
+            reject(new DOMException('Aborted','AbortError'));
+          });
+        }
+        setTimeout(function() {
+          if (ctrl && ctrl.aborted) {
+            reject(new DOMException('Aborted','AbortError'));
+            return;
+          }
+          var products = makeDemoProducts(q, trackB);
+          resolve(new Response(JSON.stringify({
+            products: products,
+            total: products.length,
+            source: source,
+            ai_response: trackB ? 'מצאתי מוצרים שמתאימים לחיפוש שלך — ממוינים לפי רלוונטיות.' : null,
+            follow_ups: trackB ? [
+              'הראה לי גם ביו-דינמי',
+              'מה הכי טרי היום?',
+              'כמה זה עולה לארוחה של 4?',
+              'יש גרסא ללא לקטוז?',
+            ] : [],
+          }), { headers: { 'Content-Type': 'application/json' } });
+        }, delay);
+      });
+    }
+    return orig(url, opts);
+  };
+
+  /* Demo product catalog — generic, clearly illustrative */
+  var DEMO_PRODUCTS = [
+    { id: 1,  name: 'גבינה צהובה עגולה',    emoji: '🧀', price_html: '<span>₪38.00</span>',   in_stock: true,  ai_reason: 'מתאים לאירוחים ולכריכים — נמס יפה על לחם חם.' },
+    { id: 2,  name: 'גבינת עיזים רכה',      emoji: '🐐', price_html: '<span>₪34.00</span>',   in_stock: true,  ai_reason: 'פחות שומן מגבינה צהובה, טעם עדין — טוב לסלטים.' },
+    { id: 3,  name: 'שמן זית כתית מעולה',   emoji: '🫒', price_html: '<span>₪56.00</span>',   in_stock: true,  ai_reason: 'מיצוי קר ראשון — שומר טעמים לתיבול ולהגשה.' },
+    { id: 4,  name: 'שמן עשבי תיבול',       emoji: '🌿', price_html: '<span>₪48.00</span>',   in_stock: false, ai_reason: 'שילוב של עשבי תיבול טריים — מתאים לדגים ופסטות.' },
+    { id: 5,  name: 'דבש פרחי שדה',         emoji: '🍯', price_html: '<span>₪42.00</span>',   in_stock: true,  ai_reason: 'מופק בחווה — מתאים לשילוב עם גבינה צהובה על לחם.' },
+    { id: 6,  name: 'יוגורט ביתי טבעי',     emoji: '🥛', price_html: '<span>₪14.00</span>',   in_stock: true,  ai_reason: 'ללא סוכר מוסף, רמת שומן בינונית — מתאים לבוקר.' },
+    { id: 7,  name: 'חמאת חוות',            emoji: '🧈', price_html: '<span>₪22.00</span>',   in_stock: true,  ai_reason: 'לא מלוחה — מתאים לאפייה ולהגשה עם לחם כפרי.' },
+    { id: 8,  name: 'ממרח גבינה מעושנת',    emoji: '🧆', price_html: '<span>₪29.00</span>',   in_stock: true,  ai_reason: 'עישון קר של 48 שעות — מוסיף עומק לחטיפים ולפסטות.' },
+    { id: 9,  name: 'גבינה כחולה',          emoji: '🫙', price_html: '<span>₪52.00</span>',   in_stock: true,  ai_reason: 'בשלות של 60 יום — מתאים לאוהבי טעמים עזים.' },
+    { id: 10, name: 'לבנה עשבי תיבול',      emoji: '🌱', price_html: '<span>₪18.00</span>',   in_stock: true,  ai_reason: 'ממרח קליל — מתאים לפתיחת ארוחות ולציפוי לחמניות.' },
+    { id: 11, name: 'שמן שקדים גולמי',      emoji: '🌰', price_html: '<span>₪64.00</span>',   in_stock: false, ai_reason: 'עשיר בוויטמין E — שימוש לאפייה ולרטבי סלט.' },
+    { id: 12, name: 'ריבת תאנים תוצרת בית', emoji: '🫐', price_html: '<span>₪26.00</span>',   in_stock: true,  ai_reason: 'מתוק-חריף — שילוב מצוין עם גבינה קשה ויין.' },
+  ];
+
+  function makeDemoProducts(q, trackB) {
+    var base = DEMO_PRODUCTS.filter(function(p) {
+      var lq = q.toLowerCase();
+      return lq.length < 2 || p.name.includes(lq) || p.ai_reason.includes(lq) || true;
+    });
+    /* Track B gets AI fields; Track A gets basic fields */
+    return base.map(function(p) {
+      var out = {
+        id:          p.id,
+        name:        p.name,
+        permalink:   '#product-' + p.id,
+        image:       null,  /* will show emoji fallback via card-image style */
+        emoji:       p.emoji,
+        price_html:  p.price_html,
+        in_stock:    p.in_stock,
+        type:        'simple',
+        is_weighted: false,
+      };
+      if (trackB) {
+        out.ai_reason = p.ai_reason;
+      }
+      return out;
+    });
+  }
+})();
+</script>
+
+<!-- ================================================================
+     DRAWER JS — exact copy from build/index.js with one change:
+     card image renders emoji for demo products (no real image URLs)
+     ================================================================ -->
+<script>
+/**
+ * AI Smart Commerce Search — search drawer V3 (DEMO BUILD)
+ */
+(function () {
+  'use strict';
+
+  /* ---- i18n helper ---- */
+  const cfg  = window.ascConfig || {};
+  const i18n = cfg.i18n || {};
+
+  function __(str) {
+    if (window.wp && window.wp.i18n && window.wp.i18n.__) {
+      const t = window.wp.i18n.__(str, 'ai-smart-commerce-search');
+      if (t !== str) return t;
+    }
+    return i18n[str] || str;
+  }
+
+  /* ---- DOM factory ---- */
+  function el(tag, attrs) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      for (const [k, v] of Object.entries(attrs)) {
+        if (v == null) continue;
+        if (k === 'className') node.className = v;
+        else if (k.startsWith('on')) node.addEventListener(k.slice(2).toLowerCase(), v);
+        else node.setAttribute(k, v);
+      }
+    }
+    for (let i = 2; i < arguments.length; i++) {
+      const c = arguments[i];
+      if (c == null) continue;
+      node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    }
+    return node;
+  }
+
+  /* ---- Rotating placeholder (spec §2.1) ---- */
+  var PLACEHOLDERS = [
+    'מה תרצו למצוא היום? אפשר לשאול אותי חופשי...',
+    'אני מחפש גבינות מיוחדות לאירוח...',
+    'מה כדאי להכין לארוחת ערב?',
+    'יש לכם משהו דומה אבל זול יותר?',
+    'אני צריך מוצרים לארוחה של 6 אנשים...',
+    'איזה מבצעים מתאימים לי היום?',
+    'אני מחפש משהו טעים ללא גלוטן...',
+  ];
+  var phIdx   = 0;
+  var phTimer = null;
+
+  function rotatePlaceholder() {
+    if (searchInput && !searchInput.value) {
+      phIdx = (phIdx + 1) % PLACEHOLDERS.length;
+      searchInput.setAttribute('placeholder', PLACEHOLDERS[phIdx]);
+    }
+  }
+
+  /* ---- State ---- */
+  let isOpen        = false;
+  let searchTimer   = null;
+  let currentQuery  = '';
+  let currentAll    = [];
+  let shownCount    = 0;
+  let fullDone      = false;
+  let aborts        = [];
+  let aiBarTimer    = null;
+  let cartNonce     = cfg.nonce || '';
+
+  const INITIAL_SHOW = 6;
+  const AI_MSGS = [
+    i18n.aiThinking  || 'AI מנתח את הבקשה...',
+    i18n.aiFetching  || 'AI מחפש מוצרים רלוונטיים...',
+    i18n.aiRanking   || 'AI מדרג תוצאות עבורך...',
+  ];
+
+  /* ---- Build drawer DOM ---- */
+  const overlay = el('div', { className: 'asc-overlay', 'aria-hidden': 'true' });
+  overlay.addEventListener('click', closeDrawer);
+
+  const searchInput = el('input', {
+    type:         'search',
+    className:    'asc-search-input',
+    placeholder:  PLACEHOLDERS[0],
+    'aria-label': i18n.placeholder || 'חיפוש',
+    autocomplete: 'off',
+    dir:          'rtl',
+  });
+
+  const closeBtn = el('button', {
+    className:    'asc-close-btn',
+    'aria-label': i18n.close || 'סגור חיפוש',
+    type: 'button',
+  });
+  closeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  closeBtn.addEventListener('click', closeDrawer);
+
+  const header = el('div', { className: 'asc-header', role: 'search' }, closeBtn, searchInput);
+
+  const aiDot  = el('span', { className: 'asc-ai-dot', 'aria-hidden': 'true' });
+  const aiText = el('span', { className: 'asc-ai-text' });
+  const aiBar  = el('div',  { className: 'asc-ai-bar', role: 'status', 'aria-live': 'polite' }, aiDot, aiText);
+
+  const statusBar = el('div', { className: 'asc-status', 'aria-live': 'polite', 'aria-atomic': 'true' });
+
+  const resultsEl = el('div', {
+    className:   'asc-results',
+    role:        'list',
+    tabindex:    '-1',
+    'aria-label': i18n.resultsLabel || 'תוצאות חיפוש',
+  });
+
+  const chipsEl = el('div', {
+    className:   'asc-chips',
+    role:        'group',
+    'aria-label': 'הצעות להמשך',
+  });
+
+  const drawer = el('div', {
+    className:    'asc-drawer',
+    role:         'dialog',
+    'aria-modal': 'true',
+    'aria-label': i18n.drawerLabel || 'חיפוש מוצרים',
+    dir: 'rtl',
+  }, header, aiBar, statusBar, resultsEl, chipsEl);
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(drawer);
+
+  /* ---- Open / Close ---- */
+  function detectSiteHeaderHeight() {
+    var sels = ['.site-header','#masthead','#site-header','header[role="banner"]','.header-main','#header','header.header'];
+    for (var i = 0; i < sels.length; i++) {
+      var h = document.querySelector(sels[i]);
+      if (h) {
+        var r = h.getBoundingClientRect();
+        if (r.bottom > 10 && r.bottom < 300) return Math.round(r.bottom);
+      }
+    }
+    return 0;
+  }
+
+  function openDrawer() {
+    if (isOpen) return;
+    isOpen = true;
+    var hh = detectSiteHeaderHeight();
+    document.documentElement.style.setProperty('--asc-header-offset', hh + 'px');
+    overlay.classList.add('asc-visible');
+    drawer.classList.add('asc-open');
+    searchInput.focus();
+    document.body.style.overflow = 'hidden';
+    if (!phTimer) phTimer = setInterval(rotatePlaceholder, 3500);
+  }
+
+  function closeDrawer() {
+    if (!isOpen) return;
+    isOpen = false;
+    overlay.classList.remove('asc-visible');
+    drawer.classList.remove('asc-open');
+    document.body.style.overflow = '';
+    if (phTimer) { clearInterval(phTimer); phTimer = null; }
+    cancelPending();
+    var native = document.querySelector('.asc-native-hidden-input, input[name="s"]');
+    if (native) native.focus();
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && isOpen) closeDrawer();
+  });
+
+  /* ---- Intercept native search fields ---- */
+  function interceptSearchForms() {
+    var selectors = [
+      'input[type="search"][name="s"]',
+      '.search-field',
+      '.wp-block-search__input',
+      'input.search-input',
+    ];
+    document.querySelectorAll(selectors.join(',')).forEach(function (input) {
+      if (input.dataset.ascHijacked) return;
+      input.dataset.ascHijacked = 'true';
+      input.classList.add('asc-native-hidden-input');
+      input.addEventListener('focus', function () {
+        openDrawer();
+        searchInput.value = input.value;
+        if (input.value.trim().length >= 2) runSearch(input.value.trim());
+      });
+      var form = input.closest('form');
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          openDrawer();
+          if (searchInput.value.trim().length >= 2) runSearch(searchInput.value.trim());
+        });
+      }
+    });
+  }
+
+  interceptSearchForms();
+  if (window.MutationObserver) {
+    new MutationObserver(interceptSearchForms).observe(document.body, { childList: true, subtree: true });
+  }
+
+  /* ---- Search input handler ---- */
+  searchInput.addEventListener('input', function () {
+    var q = searchInput.value.trim();
+    if (searchTimer) clearTimeout(searchTimer);
+    if (q.length < 2) {
+      setStatus('');
+      clearResults();
+      hideAiBar();
+      clearChips();
+      return;
+    }
+    renderSkeletons(INITIAL_SHOW);
+    searchTimer = setTimeout(function () { runSearch(q); }, 300);
+  });
+
+  /* ---- Two-track search ---- */
+  function runSearch(q) {
+    currentQuery = q;
+    currentAll = [];
+    shownCount = 0;
+    fullDone = false;
+    cancelPending();
+
+    /* Track A — fast provisional results */
+    var ctrlA = new AbortController();
+    aborts.push(ctrlA);
+    fetch((cfg.restUrl || '/wp-json/asc/v1') + '/search?q=' + encodeURIComponent(q) + '&per_page=12&track=a', {
+      headers: { 'X-WP-Nonce': cartNonce },
+      signal: ctrlA.signal,
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (currentQuery !== q) return;
+      if (!fullDone) {
+        currentAll = data.products || [];
+        shownCount = Math.min(currentAll.length, INITIAL_SHOW);
+        renderVisible();
+      }
+    })
+    .catch(function(e) { if (e.name !== 'AbortError') console.error('Track A', e); });
+
+    /* Track B — full AI results */
+    var ctrlB = new AbortController();
+    aborts.push(ctrlB);
+    showAiBar();
+    fetch((cfg.restUrl || '/wp-json/asc/v1') + '/search?q=' + encodeURIComponent(q) + '&per_page=12&track=b', {
+      headers: { 'X-WP-Nonce': cartNonce },
+      signal: ctrlB.signal,
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (currentQuery !== q) return;
+      fullDone = true;
+      hideAiBar();
+      currentAll = data.products || [];
+      shownCount = Math.min(currentAll.length, INITIAL_SHOW);
+      renderVisible();
+      if (data.follow_ups && data.follow_ups.length) renderChips(data.follow_ups);
+      if (!currentAll.length) setStatus(i18n.noResults || 'לא נמצאו מוצרים');
+    })
+    .catch(function(e) {
+      if (e.name !== 'AbortError') {
+        hideAiBar();
+        if (currentQuery === q && !currentAll.length) setStatus('שגיאה בחיפוש', true);
+      }
+    });
+  }
+
+  function cancelPending() {
+    aborts.forEach(function(c) { try { c.abort(); } catch(e) {} });
+    aborts = [];
+  }
+
+  /* ---- Render ---- */
+  function clearResults() {
+    while (resultsEl.firstChild) resultsEl.removeChild(resultsEl.firstChild);
+    currentAll = [];
+    shownCount = 0;
+  }
+
+  function renderVisible() {
+    while (resultsEl.firstChild) resultsEl.removeChild(resultsEl.firstChild);
+    setStatus('');
+    var visible = currentAll.slice(0, shownCount);
+    visible.forEach(function(p, idx) { resultsEl.appendChild(buildCard(p, idx)); });
+    if (shownCount < currentAll.length) {
+      var more = el('button', { className: 'asc-show-more', type: 'button' },
+        'הצג עוד ' + (currentAll.length - shownCount) + ' מוצרים');
+      more.addEventListener('click', function() {
+        shownCount = currentAll.length;
+        renderVisible();
+      });
+      resultsEl.appendChild(more);
+    }
+    if (!visible.length && fullDone) {
+      resultsEl.appendChild(el('p', { className: 'asc-no-results' }, i18n.noResults || 'לא נמצאו מוצרים'));
+    }
+  }
+
+  function renderSkeletons(n) {
+    while (resultsEl.firstChild) resultsEl.removeChild(resultsEl.firstChild);
+    for (var i = 0; i < n; i++) resultsEl.appendChild(buildSkeleton());
+  }
+
+  function buildSkeleton() {
+    var imgEl  = el('div', { className: 'asc-card-image' });
+    var line1  = el('span', { className: 'asc-skel-line' });
+    var line2  = el('span', { className: 'asc-skel-line asc-skel-sm' });
+    var line3  = el('span', { className: 'asc-skel-line asc-skel-sm' });
+    var btn    = el('span', { className: 'asc-skel-btn' });
+    var body   = el('div',  { className: 'asc-card-body' }, line1, line2, line3, btn);
+    return el('div', { className: 'asc-card asc-skeleton', 'aria-hidden': 'true' }, imgEl, body);
+  }
+
+  function buildCard(p, idx) {
+    var imgEl;
+    if (p.image) {
+      imgEl = el('img', { src: p.image, alt: p.name || '', className: 'asc-card-image', loading: 'lazy', width: '88', height: '88' });
+    } else {
+      imgEl = el('div', { className: 'asc-card-image' }, p.emoji || '📦');
+    }
+
+    var nameLink = el('a', { href: p.permalink || '#' }, p.name || '');
+    var nameEl   = el('div', { className: 'asc-card-name' }, nameLink);
+    var bodyChildren = [nameEl];
+
+    if (p.ai_reason) {
+      bodyChildren.push(el('p', { className: 'asc-card-reason' }, p.ai_reason));
+    }
+
+    var priceEl = el('div', { className: 'asc-card-price' });
+    priceEl.innerHTML = p.price_html || '';
+    bodyChildren.push(priceEl);
+
+    var stockEl = el('span', {
+      className: 'asc-stock-badge ' + (p.in_stock ? 'in-stock' : 'out-of-stock'),
+    }, p.in_stock ? (i18n.inStock || 'במלאי') : (i18n.outOfStock || 'אזל מהמלאי'));
+    bodyChildren.push(stockEl);
+
+    var qtyInput = el('input', {
+      type: 'number', className: 'asc-qty-input', value: '1', min: '1', max: '99',
+      'aria-label': i18n.quantity || 'כמות',
+    });
+    var qtyMinus = el('button', { type: 'button', className: 'asc-qty-btn', 'aria-label': '−' }, '−');
+    var qtyPlus  = el('button', { type: 'button', className: 'asc-qty-btn', 'aria-label': '+' }, '+');
+    qtyMinus.addEventListener('click', function() { var v = parseInt(qtyInput.value,10)||1; if (v>1) qtyInput.value=v-1; });
+    qtyPlus.addEventListener('click',  function() { var v = parseInt(qtyInput.value,10)||1; qtyInput.value=v+1; });
+    var qtyWrapper = el('div', { className: 'asc-qty-wrapper' }, qtyMinus, qtyInput, qtyPlus);
+
+    var addBtn = el('button', {
+      type: 'button', className: 'asc-add-btn', 'data-id': String(p.id),
+      disabled: p.in_stock ? null : 'disabled',
+      'aria-label': (i18n.addToCart || 'הוסף לסל') + ': ' + p.name,
+    }, i18n.addToCart || 'הוסף לסל');
+
+    addBtn.addEventListener('click', function() {
+      /* Demo: just flash "Added!" without real API */
+      addBtn.textContent = i18n.addedToCart || 'נוסף לסל!';
+      addBtn.classList.add('asc-added');
+      setTimeout(function() {
+        addBtn.textContent = i18n.addToCart || 'הוסף לסל';
+        addBtn.classList.remove('asc-added');
+      }, 1800);
+    });
+
+    var actionsEl = el('div', { className: 'asc-card-actions' }, qtyWrapper, addBtn);
+    bodyChildren.push(actionsEl);
+
+    var body = el('div', { className: 'asc-card-body' }, ...bodyChildren);
+    return el('div', { className: 'asc-card', role: 'listitem', tabindex: '0' }, imgEl, body);
+  }
+
+  /* ---- AI bar ---- */
+  var aiMsgIdx = 0;
+  function showAiBar() {
+    aiMsgIdx = 0;
+    aiText.textContent = AI_MSGS[0];
+    aiBar.classList.add('asc-active');
+    if (aiBarTimer) clearInterval(aiBarTimer);
+    aiBarTimer = setInterval(function() {
+      aiMsgIdx = (aiMsgIdx + 1) % AI_MSGS.length;
+      aiText.textContent = AI_MSGS[aiMsgIdx];
+    }, 1300);
+  }
+  function hideAiBar() {
+    if (aiBarTimer) { clearInterval(aiBarTimer); aiBarTimer = null; }
+    aiBar.classList.remove('asc-active');
+  }
+
+  /* ---- Follow-up chips ---- */
+  function renderChips(chips) {
+    while (chipsEl.firstChild) chipsEl.removeChild(chipsEl.firstChild);
+    if (!chips || !chips.length) { chipsEl.classList.remove('asc-visible'); return; }
+    chips.forEach(function(text) {
+      var chip = el('button', { type: 'button', className: 'asc-chip' }, text);
+      chip.addEventListener('click', function() {
+        searchInput.value = text;
+        runSearch(text);
+      });
+      chipsEl.appendChild(chip);
+    });
+    chipsEl.classList.add('asc-visible');
+  }
+  function clearChips() {
+    while (chipsEl.firstChild) chipsEl.removeChild(chipsEl.firstChild);
+    chipsEl.classList.remove('asc-visible');
+  }
+
+  /* ---- Status ---- */
+  function setStatus(msg, isError) {
+    statusBar.textContent = '';
+    if (!msg) return;
+    if (typeof msg === 'string' && msg.includes('<')) statusBar.innerHTML = msg;
+    else statusBar.textContent = msg;
+    statusBar.className = 'asc-status' + (isError ? ' asc-error' : '');
+  }
+
+  /* ================================================================
+     Auto-open on page load with a demo query so CEO can see results
+     immediately. Simulates user typing "גבינה".
+     ================================================================ */
+  window.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      openDrawer();
+      searchInput.value = 'גבינה';
+      runSearch('גבינה');
+    }, 400);
+  });
+
+})();
+</script>
+</body>
+</html>

@@ -37,6 +37,26 @@
     return node;
   }
 
+  /* ---- Rotating placeholder (spec §2.1) ---- */
+  var PLACEHOLDERS = [
+    'מה תרצו למצוא היום? אפשר לשאול אותי חופשי...',
+    'אני מחפש גבינות מיוחדות לאירוח...',
+    'מה כדאי להכין לארוחת ערב?',
+    'יש לכם משהו דומה אבל זול יותר?',
+    'אני צריך מוצרים לארוחה של 6 אנשים...',
+    'איזה מבצעים מתאימים לי היום?',
+    'אני מחפש משהו טעים ללא גלוטן...',
+  ];
+  var phIdx   = 0;
+  var phTimer = null;
+
+  function rotatePlaceholder() {
+    if (searchInput && !searchInput.value) {
+      phIdx = (phIdx + 1) % PLACEHOLDERS.length;
+      searchInput.setAttribute('placeholder', PLACEHOLDERS[phIdx]);
+    }
+  }
+
   /* ---- State ---- */
   let isOpen        = false;
   let searchTimer   = null;
@@ -62,7 +82,7 @@
   const searchInput = el('input', {
     type:         'search',
     className:    'asc-search-input',
-    placeholder:  i18n.placeholder || '\u05de\u05d4 \u05d0\u05ea\u05dd \u05de\u05d7\u05e4\u05e9\u05d9\u05dd? \u05dc\u05d3\u05d5\u05d2\u05de\u05d0: "\u05d0\u05e8\u05d5\u05d7\u05ea \u05e9\u05d1\u05ea \u05dc\u05d7\u05de\u05d9\u05e9\u05d4, \u05d1\u05de\u05d1\u05e6\u05e2"',
+    placeholder:  PLACEHOLDERS[0],
     'aria-label': i18n.placeholder || '\u05d7\u05d9\u05e4\u05d5\u05e9',
     autocomplete: 'off',
     dir:          'rtl',
@@ -130,6 +150,7 @@
     drawer.classList.add('asc-open');
     searchInput.focus();
     document.body.style.overflow = 'hidden';
+    if (!phTimer) phTimer = setInterval(rotatePlaceholder, 3500);
   }
 
   function closeDrawer() {
@@ -138,6 +159,7 @@
     overlay.classList.remove('asc-visible');
     drawer.classList.remove('asc-open');
     document.body.style.overflow = '';
+    if (phTimer) { clearInterval(phTimer); phTimer = null; }
     cancelPending();
     var native = document.querySelector('.asc-native-hidden-input, input[name="s"]');
     if (native) native.focus();
