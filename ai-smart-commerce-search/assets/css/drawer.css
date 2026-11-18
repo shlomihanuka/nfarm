@@ -302,3 +302,187 @@
 @keyframes asc-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ==========================================================
+   Voice search
+   ========================================================== */
+
+/* ---- Mic button (appended to .asc-header; sits on logical end = left in RTL) ---- */
+.asc-mic-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  width: 36px;
+  height: 36px;
+}
+.asc-mic-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #111;
+}
+.asc-mic-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+.asc-mic-btn:disabled,
+.asc-mic-btn.asc-mic-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.asc-mic-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+/* Recording state: button turns red */
+.asc-mic-btn.asc-mic-recording {
+  color: #dc2626;
+  background: #fef2f2;
+}
+.asc-mic-btn.asc-mic-recording:hover {
+  background: #fee2e2;
+}
+
+/* Pulsing animation on the mic icon while recording */
+@keyframes asc-mic-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+.asc-mic-pulse {
+  animation: asc-mic-pulse 1s ease-in-out infinite;
+}
+
+/* Processing state: spinner shown instead of icon */
+.asc-mic-btn.asc-mic-processing {
+  color: #6b7280;
+  pointer-events: none;
+}
+
+/* ---- Voice preview bar ---- */
+.asc-voice-preview {
+  flex-shrink: 0;
+  /* hidden by default — zero height so it doesn't push content */
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease, padding 0.2s ease;
+  padding: 0 16px;
+  border-bottom: 1px solid transparent;
+  background: #f0f9ff;
+}
+.asc-voice-preview.asc-voice-preview-open {
+  max-height: 120px;
+  padding: 10px 16px;
+  border-bottom-color: #bae6fd;
+}
+
+/* Prior context hint */
+.asc-voice-context-row {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-bottom: 6px;
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.asc-voice-context-label {
+  font-weight: 600;
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+.asc-voice-context-text {
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+/* Row with editable transcript + countdown + confirm/cancel */
+.asc-voice-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.asc-voice-transcript-input {
+  flex: 1;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 1rem;
+  direction: rtl;
+  background: #fff;
+  color: #111;
+  outline: none;
+}
+.asc-voice-transcript-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+.asc-voice-countdown {
+  font-size: 0.85rem;
+  color: #3b82f6;
+  font-weight: 700;
+  min-width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.asc-voice-confirm-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.asc-voice-confirm-btn:hover { background: #1d4ed8; }
+.asc-voice-confirm-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+.asc-voice-cancel-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.88rem;
+  color: #6b7280;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.asc-voice-cancel-btn:hover {
+  background: #f3f4f6;
+  color: #111;
+}
+.asc-voice-cancel-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .asc-voice-actions-row {
+    flex-wrap: wrap;
+  }
+  .asc-voice-transcript-input {
+    flex-basis: 100%;
+  }
+  .asc-voice-confirm-btn,
+  .asc-voice-cancel-btn {
+    min-height: 40px;
+  }
+}

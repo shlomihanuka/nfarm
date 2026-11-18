@@ -141,6 +141,59 @@ $settings = ASC_Settings::instance()->all();
             </table>
         </div>
 
+        <!-- ======================================================= -->
+        <!-- Step 3 — Voice Search                                   -->
+        <!-- ======================================================= -->
+        <div class="asc-wizard-step">
+            <h2 class="asc-step-title">
+                <span class="asc-step-num">3</span>
+                <?php esc_html_e( 'Voice Search', 'ai-smart-commerce-search' ); ?>
+            </h2>
+            <p class="description">
+                <?php esc_html_e( 'Adds a microphone button to the search drawer. Uses Google Cloud Speech-to-Text (he-IL model). Leave the key blank to disable voice.', 'ai-smart-commerce-search' ); ?>
+            </p>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="asc_voice_enabled">
+                            <?php esc_html_e( 'Enable Voice Search', 'ai-smart-commerce-search' ); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <input type="checkbox"
+                               id="asc_voice_enabled"
+                               name="asc_settings[voice_enabled]"
+                               value="1"
+                               <?php checked( $settings['voice_enabled'] ); ?>>
+                        <p class="description">
+                            <?php esc_html_e( 'Uncheck to hide the mic button without removing the API key.', 'ai-smart-commerce-search' ); ?>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="asc_stt_api_key">
+                            <?php esc_html_e( 'Google STT API Key', 'ai-smart-commerce-search' ); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <input type="password"
+                               id="asc_stt_api_key"
+                               name="asc_settings[stt_api_key]"
+                               value="<?php echo esc_attr( $settings['stt_api_key'] ); ?>"
+                               class="regular-text"
+                               autocomplete="new-password">
+                        <p class="description">
+                            <?php esc_html_e( 'Google Cloud Speech-to-Text API key. Enable the Speech-to-Text API in your GCP project and restrict this key to the Speech API only.', 'ai-smart-commerce-search' ); ?>
+                            <?php if ( ! empty( $settings['stt_api_key'] ) ): ?>
+                                <br><strong><?php esc_html_e( 'A key is currently saved.', 'ai-smart-commerce-search' ); ?></strong>
+                            <?php endif; ?>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
         <?php submit_button( esc_html__( 'Save Settings', 'ai-smart-commerce-search' ) ); ?>
     </form>
 </div>
