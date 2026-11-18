@@ -18,10 +18,11 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { IntentResultSchema, RankedProduct } from '../schemas/index.js';
+import { IntentResultSchema, RankedProduct, RankedProductSchema } from '../schemas/index.js';
 import { buildSearchPlan, buildProvisionalPlan, rankProducts } from '../search-service.js';
 import { runIntentEngine } from '../intent-engine.js';
 import { runAssistantEngine } from '../assistant-engine.js';
+import { runEditorialEngine } from '../editorial-engine.js';
 import { saveTrace } from '../debug-store.js';
 
 const SearchRequestSchema = z.object({
@@ -31,6 +32,8 @@ const SearchRequestSchema = z.object({
   per_page: z.number().int().min(1).max(48).default(12),
   page: z.number().int().min(1).default(1),
   provisional: z.boolean().default(false),
+  // R5: WC products passed from PHP for ranking + editorial (cloud has no WC access)
+  products: z.array(RankedProductSchema.passthrough()).optional(),
 });
 
 export async function searchRoutes(app: FastifyInstance) {
@@ -43,7 +46,7 @@ export async function searchRoutes(app: FastifyInstance) {
       });
     }
 
-    const { tenant_id, q, intent: incomingIntent, per_page, page, provisional } = parseResult.data;
+    const { tenant_id, q, intent: incomingIntent, per_page, page, provisional, products: incomingProducts } = parseResult.data;
     const trace_id = uuidv4().replace(/-/g, '').slice(0, 16);
     const created_at = new Date().toISOString();
     const totalStart = Date.now();
@@ -102,13 +105,13 @@ export async function searchRoutes(app: FastifyInstance) {
     const retrievalStart = Date.now();
     const search_plan = buildSearchPlan(intent, per_page, page);
 
-    // Phase 1 stub: products arrive from WC via the PHP plugin.
-    // pgvector retrieval layer is wired in Phase 2 (R5+).
-    const products: RankedProduct[] = [];
+    // Products come from WC via the PHP plugin. When passed in the request body,
+    // use them for ranking + editorial. pgvector will supplement in Phase 2+.
+    const wcProducts: RankedProduct[] = (incomingProducts || []) as RankedProduct[];
     const retrievalLatency = Date.now() - retrievalStart;
 
     const rankingStart = Date.now();
-    const ranked = rankProducts(products, intent);
+    const ranked = rankProducts(wcProducts, intent);
     const rankingLatency = Date.now() - rankingStart;
 
     // Enrich ranked products with per-product fields
@@ -125,6 +128,21 @@ export async function searchRoutes(app: FastifyInstance) {
       outputTokens += ar.output_tokens;
     } catch (err) {
       app.log.warn({ err }, 'Assistant engine failed in /search — continuing without message');
+    }
+
+    // Generate editorial groups + guiding sentence (R5)
+    let groups: import('../schemas/index.js').ProductGroup[] = [];
+    let guiding_sentence = '';
+    let editorialLatency = 0;
+    try {
+      const er = await runEditorialEngine(enriched, intent);
+      groups = er.editorial.groups;
+      guiding_sentence = er.editorial.guiding_sentence;
+      editorialLatency = er.latency_ms;
+      inputTokens += er.input_tokens;
+      outputTokens += er.output_tokens;
+    } catch (err) {
+      app.log.warn({ err }, 'Editorial engine failed in /search — returning flat products');
     }
 
     const totalLatency = Date.now() - totalStart;
@@ -152,6 +170,8 @@ export async function searchRoutes(app: FastifyInstance) {
       total: enriched.length,
       pages: Math.ceil(enriched.length / per_page),
       source: 'cloud_v3',
+      groups,
+      guiding_sentence,
       assistant,
       follow_ups: assistant.follow_ups,
       search_plan,
@@ -161,6 +181,7 @@ export async function searchRoutes(app: FastifyInstance) {
           intent: intentLatency,
           retrieval: retrievalLatency,
           assistant: assistantLatency,
+          editorial: editorialLatency,
           total: totalLatency,
         },
       },

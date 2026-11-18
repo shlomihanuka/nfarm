@@ -408,6 +408,78 @@
 }
 
 /* ================================================================
+   R5 — Editorial connectors, promotions, inline substitutes
+   ================================================================ */
+
+/* Connector text: appears between groups inside the result grid */
+.asc-connector {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 0; font-size: 0.78rem; color: var(--asc-gray-500);
+  font-style: italic; line-height: 1.45; font-family: inherit;
+  animation: asc-fade-in 0.2s ease;
+}
+.asc-connector::before,
+.asc-connector::after {
+  content: ''; flex: 1; height: 1px; background: var(--asc-gray-200);
+}
+/* Guiding sentence: first item in list, slightly more weight, no decorative rule */
+.asc-connector.asc-guide {
+  font-size: 0.84rem; color: var(--asc-gray-700); font-style: normal;
+  font-weight: 500; padding: 2px 0 8px;
+}
+.asc-connector.asc-guide::before,
+.asc-connector.asc-guide::after { display: none; }
+
+/* Promotion badge — only shown when on_sale = true from catalogue data */
+.asc-promo-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.7rem; font-weight: 700; padding: 2px 7px;
+  border-radius: 20px; background: #fef3c7; color: #92400e;
+  border: 1px solid #fcd34d; width: fit-content;
+  font-family: inherit; font-style: normal;
+}
+/* On-sale card: amber accent that cannot be confused with a normal card */
+.asc-card.asc-promo { border-color: #fcd34d; background: #fffbeb; }
+.asc-card.asc-promo:hover,
+.asc-card.asc-promo:focus-within {
+  border-color: #f59e0b;
+  box-shadow: 0 2px 10px rgba(245,158,11,0.14);
+}
+
+/* Full-width out-of-stock card with attached inline substitute */
+.asc-card.asc-has-sub { grid-column: 1 / -1; flex-direction: column; }
+.asc-card-main { display: flex; align-items: flex-start; gap: 12px; }
+.asc-substitute-block {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px dashed var(--asc-gray-200);
+}
+.asc-substitute-label {
+  font-size: 0.72rem; font-weight: 700; color: var(--asc-green);
+  flex-shrink: 0; font-family: inherit; white-space: nowrap;
+}
+.asc-substitute-info { flex: 1; min-width: 120px; }
+.asc-substitute-name {
+  font-size: 0.88rem; font-weight: 600; color: var(--asc-gray-900); font-family: inherit;
+}
+.asc-substitute-reason {
+  font-size: 0.75rem; color: var(--asc-gray-500);
+  font-style: italic; line-height: 1.35; font-family: inherit;
+}
+.asc-substitute-price {
+  font-size: 0.88rem; font-weight: 600; color: var(--asc-gray-700);
+  flex-shrink: 0; font-family: inherit;
+}
+.asc-substitute-add {
+  flex: 0 0 auto !important;
+  padding: 7px 12px !important;
+  font-size: 0.82rem !important;
+  min-width: auto !important;
+  border-radius: 8px;
+}
+
+/* ================================================================
    R4 — Assistant message, options button, folded qty, modal
    ================================================================ */
 
@@ -605,6 +677,104 @@
   text-align: center;
   display: block;
   padding: 12px 0;
+}
+
+/* ================================================================
+   R5 — Editorial intelligence: groups, guiding sentence, substitutes, promotions
+   ================================================================ */
+
+/* ---- Guiding sentence (advancement line inside results area) ---- */
+.asc-guiding-sentence {
+  grid-column: 1 / -1;
+  font-size: 0.88rem;
+  color: #1e40af;
+  background: var(--asc-blue-light);
+  border-radius: 8px;
+  padding: 8px 14px;
+  line-height: 1.5;
+  font-family: inherit;
+  margin-bottom: 2px;
+  animation: asc-fade-in 0.25s ease;
+}
+
+/* ---- Group rationale (connective text between result clusters) ---- */
+.asc-group-rationale {
+  grid-column: 1 / -1;
+  font-size: 0.84rem;
+  color: var(--asc-gray-500);
+  padding: 10px 2px 4px;
+  border-top: 1px solid var(--asc-gray-100);
+  line-height: 1.5;
+  font-family: inherit;
+  font-style: italic;
+  animation: asc-fade-in 0.2s ease;
+}
+.asc-group-rationale.asc-group-first {
+  border-top: none;
+  padding-top: 2px;
+}
+.asc-group-rationale.asc-group-promo {
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* ---- Promotion badge on product card ---- */
+.asc-promo-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 20px;
+  padding: 2px 8px;
+  line-height: 1.4;
+  width: fit-content;
+  font-family: inherit;
+}
+
+/* ---- Substitutes inline in OOS card ---- */
+.asc-card-substitutes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--asc-gray-100);
+}
+.asc-card-sub-label {
+  font-size: 0.75rem;
+  color: var(--asc-gray-500);
+  flex-basis: 100%;
+  font-family: inherit;
+}
+.asc-sub-chip {
+  font-size: 0.75rem;
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 20px;
+  padding: 2px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s;
+  line-height: 1.4;
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.asc-sub-chip:hover { background: #bbf7d0; border-color: #4ade80; }
+.asc-sub-chip:focus-visible {
+  outline: 2px solid var(--asc-green);
+  outline-offset: 2px;
 }
 
 /* ---- Follow-up chips ---- */

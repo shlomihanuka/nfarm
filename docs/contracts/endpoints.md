@@ -1,4 +1,4 @@
-# Cloud Run Endpoint Signatures — V3 (R4)
+# Cloud Run Endpoint Signatures — V3 (R5)
 
 All endpoints require `X-ASC-Tenant: <tenant_id>` header.
 All requests and responses are `application/json`.
@@ -153,19 +153,48 @@ If `intent` is omitted and `provisional` is false, the endpoint calls `POST /int
   "total": 24,
   "pages": 2,
   "source": "cloud_v3",
+  "groups": [
+    {
+      "label": "פרמזן מיושן",
+      "rationale": "נמצא לפי שמות שהמוכר עצמו ציין — רגיאנו, פרמזן 24 חודשים.",
+      "products": [ ],
+      "has_promotion": false
+    },
+    {
+      "label": "גבינות מיושנות דומות",
+      "rationale": "אפשרויות דומות שכדאי לשקול.",
+      "products": [ ],
+      "has_promotion": true
+    }
+  ],
+  "guiding_sentence": "פרמזן לעומת גרנה פדנו — השווה והוסף לסל ישירות.",
   "assistant": {
-    "message": "בחרתי עבורך מרכיבים לארוחת שבת ל-5 אנשים.",
-    "tone": "suggest",
-    "follow_ups": ["מה מתאים לצמחונים?"]
+    "message": "",
+    "tone": "none",
+    "follow_ups": []
   },
-  "follow_ups": ["מה מתאים לצמחונים?"],
+  "follow_ups": [],
   "search_plan": { },
   "trace_id": "tr_abc123"
 }
 ```
 
+`products` is a flat list kept for backward compatibility and the provisional path.
+`groups` is the R5 editorial grouping — prefer it when present for rendering.
+
+**R5 fields:**
+- `groups[].label` — short group title (e.g., "במבצע עכשיו", "אזל מהמלאי")
+- `groups[].rationale` — one Hebrew sentence explaining this cluster (connective editorial text)
+- `groups[].products` — full `RankedProduct` objects in this group
+- `groups[].has_promotion` — true when the group contains genuine on-sale products
+- `guiding_sentence` — one line advancing the customer's decision; empty string when nothing useful
+
+**R5 per-product additions** (also added to `ranked-product.schema.json`):
+- `on_sale` — genuine sale flag from WC catalogue (never inferred)
+- `searchkeys` — pa_searchkey values: merchant-authored synonyms, authoritative over model inference
+
 `products` items conform to `ranked-product.schema.json`.
-Per-product fields added in R4: `price_display`, `requires_options`, `options_url`, `substitutes`.
+Per-product fields: `price_display`, `requires_options`, `options_url`, `substitutes`, `on_sale`, `searchkeys`.
 
 **Price display rule**: always use `price_display` (= `price_html`). `prices.price` from the
 Store API is price-per-gram for weighted products and will show ₪0.19 for a ₪37.80 cheese.

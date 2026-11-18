@@ -68,27 +68,27 @@ class ASC_Search {
         $per_page = (int) $request->get_param( 'per_page' );
         $page     = (int) $request->get_param( 'page' );
 
-        // Always run local WC search (the cloud ranking layer is not yet live).
+        // Always run local WC search first — cloud has no WC access of its own.
         $local = $this->local_search( $q, $per_page, $page );
+        // Enrich before passing to cloud so searchkeys + on_sale are present.
+        $enriched_products = array_map( [ $this, 'enrich_product_r4' ], $local['products'] );
 
-        // Try cloud first; fall back silently to local.
+        // Try cloud; pass enriched products so cloud can rank + group editorially (R5).
         if ( $settings->is_cloud_configured() ) {
-            $cloud_result = ASC_Cloud::instance()->search( $q, $per_page, $page );
+            $cloud_result = ASC_Cloud::instance()->search( $q, $per_page, $page, $enriched_products );
             if ( ! is_wp_error( $cloud_result ) ) {
-                // Merge: use cloud assistant + search_plan, local WC products.
+                // Merge: use cloud groups + guiding_sentence + assistant + search_plan.
                 $response = array_merge( $local, $cloud_result );
-                // If cloud returned products of its own use those; otherwise local.
+                // Cloud may return re-ranked products; fall back to local if empty.
                 if ( empty( $cloud_result['products'] ) ) {
-                    $response['products'] = $local['products'];
+                    $response['products'] = $enriched_products;
                 }
-                // Enrich products with per-product R4 fields.
-                $response['products'] = array_map( [ $this, 'enrich_product_r4' ], $response['products'] );
                 return new WP_REST_Response( $response, 200 );
             }
         }
 
-        // Local-only path: enrich products and return without assistant.
-        $local['products'] = array_map( [ $this, 'enrich_product_r4' ], $local['products'] );
+        // Local-only path: return enriched products without editorial groups.
+        $local['products'] = $enriched_products;
         return new WP_REST_Response( $local, 200 );
     }
 
@@ -182,6 +182,10 @@ class ASC_Search {
             'stock_status'=> $product->get_stock_status(),
             'type'        => $product->get_type(),
             'is_weighted' => false, // set below
+            // R5: genuine on-sale flag — required for promotion surfacing
+            'on_sale'     => $product->is_on_sale(),
+            // R5: pa_searchkey — merchant-authored synonyms, authoritative over model inference
+            'searchkeys'  => $this->get_searchkeys( $product ),
         ];
 
         // Weighed product detection: sold_individually + variable weight or external indication.
@@ -256,6 +260,24 @@ class ASC_Search {
         }
 
         return $product;
+    }
+
+    /**
+     * Extract pa_searchkey attribute values for a product.
+     * Returns array of merchant-authored synonym strings, or [].
+     */
+    private function get_searchkeys( WC_Product $product ): array {
+        // Try taxonomy terms first (most reliable for pa_* attributes).
+        $terms = wp_get_post_terms( $product->get_id(), 'pa_searchkey', [ 'fields' => 'names' ] );
+        if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+            return array_values( $terms );
+        }
+        // Fallback: get_attribute() returns comma/pipe-separated string for custom attributes.
+        $raw = $product->get_attribute( 'pa_searchkey' );
+        if ( empty( $raw ) ) {
+            return [];
+        }
+        return array_values( array_filter( array_map( 'trim', preg_split( '/[,|]+/', $raw ) ) ) );
     }
 
     private function format_attributes( WC_Product $product, array $attrs ): array {

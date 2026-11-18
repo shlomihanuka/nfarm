@@ -117,6 +117,9 @@ export const RankedProductSchema = z.object({
   // requires_options: true when add_to_cart.text === "Select options" — the ONLY reliable flag
   requires_options: z.boolean().optional(),
   options_url: z.string().url().optional(),
+  on_sale: z.boolean().optional(),
+  // searchkeys: pa_searchkey merchant-authored synonyms — authoritative over model inference
+  searchkeys: z.array(z.string()).optional(),
   ai_rank: z.number().int().min(1).optional(),
   ai_reason: z.string().optional(),
   suggest_qty: z.number().int().min(1).optional(),
@@ -127,6 +130,24 @@ export const RankedProductSchema = z.object({
   variations: z.array(z.unknown()).optional(),
 });
 export type RankedProduct = z.infer<typeof RankedProductSchema>;
+
+// ── ProductGroup (R5 — editorial grouping) ───────────────────────────────────
+
+export const ProductGroupSchema = z.object({
+  label: z.string(),
+  rationale: z.string(),
+  products: z.array(RankedProductSchema),
+  has_promotion: z.boolean().optional(),
+});
+export type ProductGroup = z.infer<typeof ProductGroupSchema>;
+
+// ── EditorialResponse (R5) ───────────────────────────────────────────────────
+
+export const EditorialResponseSchema = z.object({
+  groups: z.array(ProductGroupSchema),
+  guiding_sentence: z.string(),
+});
+export type EditorialResponse = z.infer<typeof EditorialResponseSchema>;
 
 // ── ContextFrame ────────────────────────────────────────────────────────────
 
@@ -220,5 +241,26 @@ export const ASSISTANT_RESPONSE_SCHEMA = {
     message: { type: 'STRING' },
     tone: { type: 'STRING', enum: ['answer', 'clarify', 'suggest', 'none'] },
     follow_ups: { type: 'ARRAY', items: { type: 'STRING' } },
+  },
+} as const;
+
+export const EDITORIAL_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  required: ['groups', 'guiding_sentence'],
+  properties: {
+    groups: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        required: ['label', 'rationale', 'product_indices'],
+        properties: {
+          label: { type: 'STRING' },
+          rationale: { type: 'STRING' },
+          has_promotion: { type: 'BOOLEAN' },
+          product_indices: { type: 'ARRAY', items: { type: 'INTEGER' } },
+        },
+      },
+    },
+    guiding_sentence: { type: 'STRING' },
   },
 } as const;

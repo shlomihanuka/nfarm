@@ -92,6 +92,15 @@ export function rankProducts(
 
   return products
     .map((p, idx) => {
+      // pa_searchkey (searchkeys[]) is authoritative over model inference
+      const searchkeyScore = intent.keywords.reduce((score, kw) => {
+        const hit = (p.searchkeys || []).some(sk =>
+          sk.toLowerCase().includes(kw.toLowerCase()) ||
+          kw.toLowerCase().includes(sk.toLowerCase())
+        );
+        return score + (hit ? 5 : 0);
+      }, 0);
+
       const keywordScore = intent.keywords.reduce((score, kw) => {
         const inName = p.name.toLowerCase().includes(kw.toLowerCase()) ? 2 : 0;
         return score + inName;
@@ -99,7 +108,7 @@ export function rankProducts(
 
       const saleScore = intent.filters.on_sale && p.in_stock ? 1 : 0;
 
-      const totalScore = keywordScore + saleScore;
+      const totalScore = searchkeyScore + keywordScore + saleScore;
 
       const ranked: RankedProduct = {
         ...p,

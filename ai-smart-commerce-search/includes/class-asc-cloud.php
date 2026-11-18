@@ -127,20 +127,30 @@ class ASC_Cloud {
     }
 
     /**
-     * Proxy a search query to the cloud backend.
-     * Returns a normalised result array or WP_Error on failure.
+     * Proxy a search query to the cloud backend, passing WC products for
+     * AI ranking + editorial grouping (cloud has no WC access of its own).
+     *
+     * @param string $q       User query.
+     * @param int    $per_page Results per page.
+     * @param int    $page     Page number.
+     * @param array  $products Enriched WC product arrays from local search (R5).
+     * @return array|WP_Error Normalised cloud result or WP_Error on failure.
      */
-    public function search( string $q, int $per_page, int $page ): array|WP_Error {
-        $url = add_query_arg( [
-            'q'        => urlencode( $q ),
-            'per_page' => $per_page,
-            'page'     => $page,
-            'tenant'   => $this->settings->get( 'cloud_tenant_id' ),
-        ], trailingslashit( $this->settings->get( 'cloud_api_url' ) ) . 'search' );
+    public function search( string $q, int $per_page, int $page, array $products = [] ): array|WP_Error {
+        $url = trailingslashit( $this->settings->get( 'cloud_api_url' ) ) . 'search';
 
-        $response = wp_remote_get( $url, [
-            'timeout' => 10,
-            'headers' => $this->auth_headers(),
+        $response = wp_remote_post( $url, [
+            'timeout' => 12,
+            'headers' => array_merge( $this->auth_headers(), [ 'Content-Type' => 'application/json' ] ),
+            'body'    => wp_json_encode( [
+                'q'          => $q,
+                'tenant_id'  => $this->settings->get( 'cloud_tenant_id' ),
+                'per_page'   => $per_page,
+                'page'       => $page,
+                'provisional' => false,
+                // R5: pass WC products so cloud can rank + group editorially
+                'products'   => array_values( $products ),
+            ] ),
         ] );
 
         if ( is_wp_error( $response ) ) {

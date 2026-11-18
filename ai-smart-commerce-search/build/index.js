@@ -58,15 +58,16 @@
   }
 
   /* ---- State ---- */
-  let isOpen        = false;
-  let searchTimer   = null;
-  let currentQuery  = '';
-  let currentAll    = [];   // full result set from last completed search
-  let shownCount    = 0;
-  let fullDone      = false;
-  let aborts        = [];   // AbortControllers for in-flight requests
-  let aiBarTimer    = null;
-  let cartNonce     = cfg.nonce || '';
+  let isOpen              = false;
+  let searchTimer         = null;
+  let currentQuery        = '';
+  let currentAll          = [];   // full result set from last completed search
+  let shownCount          = 0;
+  let fullDone            = false;
+  let aborts              = [];   // AbortControllers for in-flight requests
+  let aiBarTimer          = null;
+  let currentGuidingSentence = '';
+  let cartNonce           = cfg.nonce || '';
 
   const INITIAL_SHOW = 6;
   const AI_MSGS = [
@@ -131,7 +132,8 @@
     'aria-modal': 'true',
     'aria-label': i18n.drawerLabel || '\u05d7\u05d9\u05e4\u05d5\u05e9 \u05de\u05d5\u05e6\u05e8\u05d9\u05dd',
     dir: 'rtl',
-  }, header, aiBar, assistantEl, statusBar, resultsEl, chipsEl);
+  }, header, aiBar, statusBar, resultsEl, chipsEl);
+  /* assistantEl retained but not in DOM \u2014 R5 guiding sentence renders inside resultsEl */
 
   /* ---- Options modal (R4) ---- */
   var modalOverlayEl = el('div', { className: 'asc-modal-overlay', 'aria-hidden': 'true' });
@@ -270,15 +272,22 @@
         try { abortA.abort(); } catch(e) {}
         try { abortC.abort(); } catch(e) {}
         hideAiBar();
-        // If search returned a richer assistant, replace the phase-C one
-        if (data && data.assistant && data.assistant.tone !== 'none' && data.assistant.message) {
-          showAssistant(data.assistant);
+        // R5: grouped rendering suppresses the top banner — intelligence lives in the list
+        var hasGroups = data && data.groups && data.groups.length;
+        if (hasGroups) {
+          currentGuidingSentence = (data && data.guiding_sentence) || '';
+          renderGroups(data.groups, currentGuidingSentence);
+        } else {
+          // Backward-compat: flat render + top banner
+          if (data && data.assistant && data.assistant.tone !== 'none' && data.assistant.message) {
+            showAssistant(data.assistant);
+          }
+          renderResults(data.products || []);
         }
-        renderResults(data.products || []);
         // follow_ups from search response take precedence
         var chips = data.follow_ups || (data.assistant && data.assistant.follow_ups) || [];
         renderChips(chips);
-        if (!data.products || !data.products.length) {
+        if (!currentAll.length && (!data.products || !data.products.length)) {
           setStatus(i18n.noResults || 'לא נמצאו מוצרים');
         }
       })
@@ -386,6 +395,67 @@
     }
   }
 
+  /* ---- R5: Render grouped results with editorial connectors ---- */
+  /* Connector text appears BETWEEN cards; guiding sentence appears before first group.
+     Groups are rendered up to INITIAL_SHOW products total; "show more" re-renders all. */
+  function renderGroups(groups, guidingSentence) {
+    while (resultsEl.firstChild) resultsEl.removeChild(resultsEl.firstChild);
+    currentAll = [];
+    shownCount = 0;
+    if (!groups || !groups.length) return;
+
+    var flat = [];   // all products flattened, in order, with group metadata attached
+    groups.forEach(function (group) {
+      (group.products || []).forEach(function (p, idx) {
+        flat.push({
+          product:   p,
+          isPromo:   group.has_promotion || false,
+          connector: idx === 0 ? (group.rationale || '') : '',
+          isFirstGroup: group === groups[0] && idx === 0,
+        });
+        currentAll.push(p);
+      });
+    });
+
+    var total   = flat.length;
+    var visible = flat.slice(0, INITIAL_SHOW);
+    shownCount  = visible.length;
+
+    /* Guiding sentence — first item, tells customer what to decide next */
+    if (guidingSentence && guidingSentence.trim()) {
+      resultsEl.appendChild(buildConnector(guidingSentence, true));
+    }
+
+    var lastGroupStartIdx = -1;
+    visible.forEach(function (item, i) {
+      /* Group connector — before first product of each group (skip for first group
+         when a guiding sentence is already shown above it) */
+      if (item.connector && !(item.isFirstGroup && guidingSentence)) {
+        resultsEl.appendChild(buildConnector(item.connector, false));
+      }
+      resultsEl.appendChild(buildCard(item.product, item.isPromo));
+    });
+
+    if (total > shownCount) {
+      var remaining = total - shownCount;
+      var label = (i18n.showMore || 'הצג {n} תוצאות נוספות').replace('{n}', remaining);
+      var more = el('button', { type: 'button', className: 'asc-show-more' }, label);
+      more.addEventListener('click', function () {
+        shownCount = total;
+        renderGroups(groups, guidingSentence);
+      });
+      resultsEl.appendChild(more);
+    }
+  }
+
+  function buildConnector(text, isGuide) {
+    return el('div', {
+      className:   'asc-connector' + (isGuide ? ' asc-guide' : ''),
+      role:        'presentation',
+      'aria-hidden': 'true',
+    }, text);
+  }
+
   function buildShowMoreBtn(remaining) {
     var label = (i18n.showMore || '\u05d4\u05e6\u05d2 {n} \u05ea\u05d5\u05e6\u05d0\u05d5\u05ea \u05e0\u05d5\u05e1\u05e4\u05d5\u05ea').replace('{n}', remaining);
     var btn = el('button', { type: 'button', className: 'asc-show-more' }, label);
@@ -416,7 +486,8 @@
   }
 
   /* ---- Build product card ---- */
-  function buildCard(p) {
+  /* isPromo: true when this product's group has a genuine promotion */
+  function buildCard(p, isPromo) {
     var imgEl = el('img', {
       src:     p.image || '',
       alt:     p.name  || '',
@@ -440,6 +511,11 @@
     var priceEl = el('div', { className: 'asc-card-price' });
     priceEl.innerHTML = p.price_html || '';
     bodyChildren.push(priceEl);
+
+    /* R5: promotion badge \u2014 only when on_sale = true from catalogue; never faked */
+    if (p.on_sale || isPromo) {
+      bodyChildren.push(el('span', { className: 'asc-promo-badge' }, '\ud83c\udff7 \u05de\u05d1\u05e6\u05e2'));
+    }
 
     if (p.is_weighted && p.price_note) {
       bodyChildren.push(el('div', { className: 'asc-card-weight-note' }, '\u26a0 ' + p.price_note));
@@ -516,7 +592,43 @@
     }
 
     var body = el.apply(null, ['div', { className: 'asc-card-body' }].concat(bodyChildren));
-    return el('div', { className: 'asc-card', role: 'listitem', tabindex: '0' }, imgEl, body);
+
+    var cardClass = 'asc-card';
+    if (p.on_sale || isPromo) cardClass += ' asc-promo';
+
+    /* R5: out-of-stock with substitute → full-width card + attached substitute row */
+    if (!p.in_stock && p.substitute) {
+      var sub = p.substitute;
+
+      var subPriceEl = el('div', { className: 'asc-substitute-price' });
+      subPriceEl.innerHTML = sub.price_display || sub.price_html || '';
+
+      var subAddBtn = el('button', {
+        type:         'button',
+        className:    'asc-add-btn asc-substitute-add',
+        'data-id':    String(sub.id),
+        disabled:     sub.in_stock ? null : 'disabled',
+        'aria-label': (i18n.addToCart || 'הוסף לסל') + ': ' + sub.name,
+      }, i18n.addToCart || 'הוסף לסל');
+      subAddBtn.addEventListener('click', function () {
+        addToCart(sub, 1, null, subAddBtn, {});
+      });
+
+      var subBlock = el('div', { className: 'asc-substitute-block' },
+        el('span', { className: 'asc-substitute-label' }, '↩ חלופה:'),
+        el('div', { className: 'asc-substitute-info' },
+          el('div', { className: 'asc-substitute-name' }, sub.name),
+          el('div', { className: 'asc-substitute-reason' }, sub.reason || '')
+        ),
+        subPriceEl,
+        subAddBtn
+      );
+
+      var mainRow = el('div', { className: 'asc-card-main' }, imgEl, body);
+      return el('div', { className: cardClass + ' asc-has-sub', role: 'listitem', tabindex: '0' }, mainRow, subBlock);
+    }
+
+    return el('div', { className: cardClass, role: 'listitem', tabindex: '0' }, imgEl, body);
   }
 
   function findVariationId(product, selectedAttrs) {

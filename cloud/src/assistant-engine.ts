@@ -124,13 +124,14 @@ function mockAssistant(intent: IntentResult, products: RankedProduct[]): Assista
   }
 
   if (intent_type === 'category_browse') {
-    return {
-      message: products.length > 0
-        ? `מצאתי ${products.length} מוצרים בקטגוריה.`
-        : `לא מצאתי מוצרים תואמים לחיפוש זה.`,
-      tone: products.length > 0 ? 'suggest' : 'clarify',
-      follow_ups: products.length === 0 ? ['נסה חיפוש רחב יותר', 'הצג הכל'] : [],
-    };
+    if (products.length === 0) {
+      return {
+        message: 'לא מצאתי מוצרים תואמים — נסה לנסח מחדש או לרחב את החיפוש.',
+        tone: 'clarify',
+        follow_ups: ['נסה חיפוש רחב יותר', 'הצג הכל'],
+      };
+    }
+    return { message: '', tone: 'none', follow_ups: [] };
   }
 
   if (intent_type === 'ingredient_search') {
@@ -191,8 +192,10 @@ Rules:
 - For question_answering: answer ONLY from the product attributes listed above. If the attribute is not listed, say "לא מצאתי מידע על כך בקטלוג" — never guess.
 - For substitute_request: explain what you found and why the substitutes are relevant.
 - For recipe_planning / occasion_shopping: one warm, relevant sentence about what you understood.
-- When there is nothing useful to say: return tone "none" and empty message.
+- When there is nothing useful to say: return tone "none" and empty message string.
+- NEVER return a count of products found. NEVER say "מצאתי X מוצרים" or any variant. A count is not intelligence — return empty + tone:none instead.
 - Never greet, never restate the product list, never state uncertain facts as facts.
+- Never invent allergens, ingredients, origins, or prices.
 - follow_ups: 0–2 short Hebrew follow-up questions the user might want to ask next.
 
 Return JSON matching the schema exactly.`;
