@@ -1,0 +1,67 @@
+# Cloud Build — ASC Cloud Run service
+# Triggered on push to feat/v3-* and master.
+# Two separate services: asc-search-stg (staging) and asc-search-prd (production).
+# Production deploy is MANUAL — requires explicit approval step.
+
+substitutions:
+  _REGION: us-central1
+  _REPO: asc-cloud
+  _SERVICE_STG: asc-search-stg
+  _SERVICE_PRD: asc-search-prd
+
+steps:
+  # 1. Build the container image
+  - name: gcr.io/cloud-builders/docker
+    id: build
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE_STG}:$COMMIT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE_STG}:latest
+      - -f
+      - cloud/Dockerfile
+      - cloud
+
+  # 2. Push to Artifact Registry
+  - name: gcr.io/cloud-builders/docker
+    id: push
+    waitFor: [build]
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE_STG}
+
+  # 3. Deploy to staging
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: deploy-staging
+    waitFor: [push]
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE_STG}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE_STG}:$COMMIT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --no-allow-unauthenticated
+      - --service-account=asc-cloud-stg@$PROJECT_ID.iam.gserviceaccount.com
+      - --set-env-vars=NODE_ENV=staging,GCP_PROJECT_ID=$PROJECT_ID,GCP_REGION=${_REGION}
+      - --set-secrets=DATABASE_URL=asc-db-url-stg:latest,ASC_DEBUG_KEY=asc-debug-key-stg:latest
+      - --min-instances=0
+      - --max-instances=5
+      - --memory=512Mi
+      - --cpu=1
+      - --concurrency=80
+      - --timeout=30s
+
+# Production deploy is NOT automated — trigger manually with
+# gcloud run deploy asc-search-prd --image=... after staging validation.
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE_STG}:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE_STG}:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8

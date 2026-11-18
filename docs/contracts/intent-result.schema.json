@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "intent-result",
+  "title": "IntentResult",
+  "description": "Gemini's parsed understanding of a natural-language search query. This is the primary output of POST /intent and the input to POST /search.",
+  "type": "object",
+  "required": ["query_original", "intent_type", "keywords", "filters", "context", "confidence"],
+  "additionalProperties": false,
+  "properties": {
+    "query_original": {
+      "type": "string",
+      "description": "The raw user query, unmodified."
+    },
+    "intent_type": {
+      "type": "string",
+      "enum": [
+        "recipe_planning",
+        "ingredient_search",
+        "category_browse",
+        "specific_product",
+        "occasion_shopping"
+      ],
+      "description": "High-level classification of the user's intent."
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Extracted search keywords derived from the intent, normalised to singular/base form.",
+      "minItems": 0
+    },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "on_sale": {
+          "type": "boolean",
+          "description": "User expressed preference for sale items."
+        },
+        "min_price": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_price": {
+          "type": "number",
+          "minimum": 0
+        },
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "WooCommerce category slugs or display names inferred from the query."
+        },
+        "dietary": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Dietary constraints, e.g. kosher, vegan, lactose-free, gluten-free."
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "servings": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of people/servings mentioned in the query."
+        },
+        "budget": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total budget in store currency if mentioned."
+        },
+        "occasion": {
+          "type": "string",
+          "description": "Social occasion, e.g. shabbat, birthday, weekday-dinner."
+        },
+        "language": {
+          "type": "string",
+          "enum": ["he", "en", "ar", "ru"],
+          "description": "Detected query language."
+        }
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Model's self-reported confidence in the intent classification."
+    }
+  }
+}

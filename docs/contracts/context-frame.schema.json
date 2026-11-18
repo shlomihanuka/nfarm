@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "context-frame",
+  "title": "ContextFrame",
+  "description": "Multi-turn state passed across voice/chat searches within a session. Maintained in the client (session storage) and sent with every request.",
+  "type": "object",
+  "required": ["session_id", "turns"],
+  "additionalProperties": false,
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Client-generated UUID, stable for the browser session."
+    },
+    "turns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["query_original", "timestamp_ms"],
+        "additionalProperties": false,
+        "properties": {
+          "query_original": { "type": "string" },
+          "intent_type": { "type": "string" },
+          "timestamp_ms": { "type": "integer" }
+        }
+      },
+      "description": "Ordered history of previous turns in this session, newest last."
+    },
+    "accumulated_filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dietary": { "type": "array", "items": { "type": "string" } },
+        "servings": { "type": "integer" },
+        "occasion": { "type": "string" }
+      },
+      "description": "Filters that persist across turns (e.g. 'five servings' stays in context for follow-up queries)."
+    }
+  }
+}

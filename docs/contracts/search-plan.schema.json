@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "search-plan",
+  "title": "SearchPlan",
+  "description": "Orchestrator-derived execution plan. Built from IntentResult before hitting any retrieval index.",
+  "type": "object",
+  "required": ["intent", "retrieval_strategy", "pgvector_query", "wc_params", "provisional_ok"],
+  "additionalProperties": false,
+  "properties": {
+    "intent": {
+      "$ref": "intent-result"
+    },
+    "retrieval_strategy": {
+      "type": "string",
+      "enum": ["vector_primary", "keyword_fallback", "hybrid"],
+      "description": "vector_primary: pgvector leads; keyword_fallback: WC text search only (single-word queries or Gemini timeout); hybrid: both in parallel, vector re-ranks."
+    },
+    "pgvector_query": {
+      "type": "string",
+      "description": "Embedding query string — keyword join of the intent's keywords, used to generate the vector sent to pgvector."
+    },
+    "wc_params": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["per_page", "page"],
+      "properties": {
+        "s": { "type": "string" },
+        "category": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "on_sale": { "type": "boolean" },
+        "min_price": { "type": "number" },
+        "max_price": { "type": "number" },
+        "per_page": { "type": "integer", "minimum": 1, "maximum": 48 },
+        "page": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "provisional_ok": {
+      "type": "boolean",
+      "description": "If true the caller may render provisional index results before Gemini-ranked results arrive."
+    }
+  }
+}
