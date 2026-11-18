@@ -6,8 +6,9 @@
  * Run: cd cloud && pnpm demo
  */
 
-process.env['USE_MOCK_GEMINI'] = 'true';
-process.env['GEMINI_INTENT_MODEL'] = 'gemini-1.5-flash-002';
+// USE_MOCK_GEMINI=true must be set via the shell, not here — ES module
+// imports are hoisted before this line so setting env here is too late.
+// package.json "demo" script passes it correctly.
 
 import { runIntentEngine } from '../src/intent-engine.js';
 import { buildSearchPlan } from '../src/search-service.js';

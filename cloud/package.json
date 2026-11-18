@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "demo": "tsx demo/run-examples.ts",
+    "demo": "USE_MOCK_GEMINI=true tsx demo/run-examples.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
