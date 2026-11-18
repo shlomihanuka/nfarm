@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "intent-result",
+  "title": "IntentResult",
+  "description": "Gemini's parsed understanding of a natural-language search query. Produced by Cloud Run POST /intent and consumed by POST /search (ranked mode).",
+  "type": "object",
+  "required": ["query_original", "intent_type", "keywords", "filters", "context", "confidence", "intent_id"],
+  "additionalProperties": false,
+  "properties": {
+    "query_original": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "The raw user query, unmodified."
+    },
+    "query_normalized": {
+      "type": "string",
+      "description": "Normalized/canonicalized form used as the intent cache key basis."
+    },
+    "intent_type": {
+      "type": "string",
+      "enum": [
+        "recipe_planning",
+        "ingredient_search",
+        "category_browse",
+        "specific_product",
+        "occasion_shopping",
+        "substitution",
+        "info"
+      ],
+      "description": "High-level classification of the user's intent. The enum is closed — unknown values are rejected with HTTP 400. recipe_planning and ingredient_search route to decompose_recipe tool. substitution routes to a similarity search. info is handled conversationally."
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Extracted search keywords derived from the intent, normalised to singular/base form. Must not contain WooCommerce category IDs or slugs.",
+      "minItems": 0
+    },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Structured filters derived from the query. Only the specified keys are accepted; additional keys are stripped server-side.",
+      "properties": {
+        "on_sale": {
+          "type": ["boolean", "null"],
+          "description": "User expressed preference for sale items."
+        },
+        "in_stock": {
+          "type": ["boolean", "null"],
+          "description": "If true, exclude out-of-stock products."
+        },
+        "min_price": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "max_price": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "category_ids": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "WooCommerce category IDs. Verified server-side against tenant's real taxonomy — model-invented IDs return empty set, not an error."
+        },
+        "dietary": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Dietary constraints, e.g. kosher, vegan, lactose-free, gluten-free. These are advisory — the server maps them to real attribute filters where possible."
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Situational context extracted from the query.",
+      "properties": {
+        "servings": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Number of people/servings mentioned in the query."
+        },
+        "budget": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Total budget in store currency if mentioned."
+        },
+        "occasion": {
+          "type": ["string", "null"],
+          "description": "Social occasion, e.g. shabbat, birthday, weekday-dinner."
+        },
+        "language": {
+          "type": "string",
+          "enum": ["he", "en", "ar", "ru"],
+          "description": "Detected query language."
+        }
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Model's self-reported confidence in the intent classification. Values below 0.4 cause the server to treat the query as ingredient_search fallback."
+    },
+    "cache_hit": {
+      "type": "boolean",
+      "description": "True if this result was served from the Cloud Run intent cache (5-min TTL)."
+    },
+    "intent_id": {
+      "type": "string",
+      "description": "Opaque identifier for this intent result — SHA256(normalize(q) + tenant_id). Used as the ranked-results cache key and for trace correlation."
+    }
+  }
+}

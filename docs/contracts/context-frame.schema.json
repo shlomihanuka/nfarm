@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "context-frame",
+  "title": "ContextFrame",
+  "description": "Multi-turn state passed across voice/chat searches within a session. Maintained in browser sessionStorage (key: asc_context_frame). Sent with Track B /intent calls only — never with provisional searches. Max 10 turns; oldest dropped when exceeded.",
+  "type": "object",
+  "required": ["session_id", "turns"],
+  "additionalProperties": false,
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Client-generated UUID v4, stable for the browser session. Must NOT be persisted to localStorage — context must not cross sessions."
+    },
+    "turns": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["query_original", "timestamp_ms"],
+        "additionalProperties": false,
+        "properties": {
+          "query_original": { "type": "string" },
+          "intent_type":    { "type": "string" },
+          "intent_id":      { "type": "string" },
+          "timestamp_ms":   { "type": "integer" }
+        }
+      },
+      "description": "Ordered history of previous turns in this session, newest last."
+    },
+    "accumulated_filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Filters that persist across turns (e.g. 'five servings' stays in context for follow-up queries).",
+      "properties": {
+        "dietary":  { "type": "array", "items": { "type": "string" } },
+        "servings": { "type": ["integer", "null"] },
+        "occasion": { "type": ["string", "null"] },
+        "on_sale":  { "type": ["boolean", "null"] }
+      }
+    }
+  }
+}

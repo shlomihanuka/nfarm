@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ranked-product",
+  "title": "RankedProduct",
+  "description": "A WooCommerce product card as returned from the cloud, extended with AI ranking fields. All inferred fields carry source, confidence, updated_at and approval_state. Base fields mirror class-asc-search.php:format_product.",
+  "type": "object",
+  "required": ["id", "name", "permalink", "image", "price_html", "in_stock", "type", "add_to_cart_url"],
+  "additionalProperties": true,
+  "properties": {
+    "id":           { "type": "integer", "description": "WooCommerce product ID." },
+    "name":         { "type": "string" },
+    "permalink":    { "type": "string", "description": "Canonical product URL on the store." },
+    "image":        { "type": "string", "description": "Thumbnail image URL. Never a data URI or model-invented URL." },
+    "price_html":   { "type": "string", "description": "WooCommerce-formatted price HTML. Never modified by AI — price is set by WooCommerce only." },
+    "in_stock":     { "type": "boolean" },
+    "stock_status": {
+      "type": "string",
+      "enum": ["instock", "outofstock", "onbackorder"],
+      "description": "WooCommerce stock status string."
+    },
+    "type":         { "type": "string", "enum": ["simple", "variable", "grouped", "external"] },
+    "is_weighted":  { "type": "boolean" },
+    "price_note":   { "type": "string" },
+    "add_to_cart_url": {
+      "type": "string",
+      "description": "WC Store API cart endpoint. Always /wp-json/wc/store/v1/cart/add-item. Never model-generated or modified."
+    },
+    "attributes": {
+      "type": "array",
+      "description": "Variable product attribute list. Present only when type=variable."
+    },
+    "variations": {
+      "type": "array",
+      "description": "Variable product variants. Capped at 20. Present only when type=variable."
+    },
+
+    "ai_rank": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "1-based position in the AI-ranked result set. 0 = not AI-ranked (provisional source or ranking unavailable)."
+    },
+    "ai_reason": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "Brief explanation of ranking. DEVELOPER/DEBUG MODE ONLY — never displayed to shoppers."
+    },
+    "suggest_qty": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "description": "Advisory quantity for the query context (e.g. 2 packs for 5 servings). Never pre-filled in cart — user controls actual quantity."
+    },
+    "inferred_attrs": {
+      "type": "array",
+      "description": "AI-inferred product attributes (allergens, origin, dietary flags). Each entry carries full provenance. review_required=true when approval_state=pending.",
+      "items": {
+        "type": "object",
+        "required": ["key", "value", "source", "confidence", "updated_at", "approval_state"],
+        "additionalProperties": false,
+        "properties": {
+          "key":   { "type": "string" },
+          "value": {},
+          "source": {
+            "type": "string",
+            "enum": ["gemini_inference", "catalog_import", "admin_verified"],
+            "description": "How this attribute was derived."
+          },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "approval_state": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"],
+            "description": "Allergen and origin fields must reach approved before being displayed without a caveat. pending → review_required:true → caveat label shown. rejected → field hidden."
+          },
+          "review_required": {
+            "type": "boolean",
+            "description": "Computed from approval_state: true when pending. MUST be true for all safety-critical inferred attributes."
+          }
+        }
+      }
+    }
+  }
+}

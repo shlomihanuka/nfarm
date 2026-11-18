@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "search-plan",
+  "title": "SearchPlan",
+  "description": "Cloud Run internal orchestration plan. Built from IntentResult before hitting any retrieval index. NOT sent to the browser or WordPress — internal to Cloud Run only.",
+  "type": "object",
+  "required": ["intent", "retrieval_strategy", "pgvector_query", "wc_params", "provisional_ok"],
+  "additionalProperties": false,
+  "properties": {
+    "intent": {
+      "$ref": "intent-result",
+      "description": "The parsed IntentResult this plan was derived from."
+    },
+    "retrieval_strategy": {
+      "type": "string",
+      "enum": ["vector_primary", "keyword_fallback", "hybrid", "wc_local"],
+      "description": "vector_primary: pgvector leads, keyword re-ranks. keyword_fallback: WC text search only (single-word queries or Gemini timeout). hybrid: BM25 + pgvector ANN with reciprocal rank fusion (default for natural-language queries). wc_local: Cloud Run unavailable, WordPress local_search() used."
+    },
+    "pgvector_query": {
+      "type": "string",
+      "description": "Embedding query string — keyword join of the intent's keywords, used to generate the vector sent to pgvector. Empty string when retrieval_strategy=wc_local."
+    },
+    "wc_params": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["per_page", "page"],
+      "properties": {
+        "s":        { "type": "string", "description": "WC search string." },
+        "category": { "type": "array", "items": { "type": "string" } },
+        "on_sale":  { "type": "boolean" },
+        "min_price":{ "type": "number" },
+        "max_price":{ "type": "number" },
+        "per_page": { "type": "integer", "minimum": 1, "maximum": 48 },
+        "page":     { "type": "integer", "minimum": 1 }
+      }
+    },
+    "provisional_ok": {
+      "type": "boolean",
+      "description": "If true, the caller may render provisional index results before Gemini-ranked results arrive."
+    }
+  }
+}

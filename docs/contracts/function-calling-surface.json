@@ -1,0 +1,156 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "function-calling-surface",
+  "title": "Gemini Function-Calling Surface — V3",
+  "description": "Exhaustive enumeration of tools Gemini may invoke. The Cloud Run server validates every tool call before execution. No free SQL, no price mutation, no order changes, no model-invented URLs.",
+  "tools": [
+    {
+      "name": "search_catalog",
+      "description": "Search the product catalog by keywords and structured filters. Returns raw product records for ranking. Never invent product IDs — only use IDs returned by this tool.",
+      "parameters": {
+        "type": "object",
+        "required": ["keywords"],
+        "properties": {
+          "keywords": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Plain-text search terms."
+          },
+          "filters": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "in_stock":     { "type": "boolean" },
+              "on_sale":      { "type": "boolean" },
+              "category_ids": {
+                "type": "array",
+                "items": { "type": "integer" },
+                "description": "Only use category_ids returned by list_categories — never invent."
+              },
+              "max_price":    { "type": ["number", "null"] },
+              "min_price":    { "type": ["number", "null"] },
+              "dietary":      { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 48,
+            "description": "Number of results to return. Server caps at 48 regardless."
+          }
+        }
+      },
+      "server_validation": [
+        "limit capped at 48",
+        "category_ids verified against tenant taxonomy — unknown IDs return empty set, not error",
+        "unknown filter keys stripped before execution",
+        "empty keywords array returns top-selling products (not an error)"
+      ]
+    },
+    {
+      "name": "get_product",
+      "description": "Get full structured details of a specific product. Only use product IDs previously returned by search_catalog — never invent IDs.",
+      "parameters": {
+        "type": "object",
+        "required": ["product_id"],
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "description": "WooCommerce product ID. Must have been returned by search_catalog in this session."
+          }
+        }
+      },
+      "server_validation": [
+        "product_id must exist in tenant's catalog",
+        "invisible/draft/deleted products return 404 — model must handle gracefully",
+        "model may not call get_product on IDs it invented"
+      ]
+    },
+    {
+      "name": "decompose_recipe",
+      "description": "Decompose a dish or meal name into ingredient search keywords. Returns keyword strings only — not prices, stock, or availability. Never assert allergen or origin status in this response.",
+      "parameters": {
+        "type": "object",
+        "required": ["dish_name"],
+        "properties": {
+          "dish_name": {
+            "type": "string",
+            "description": "Name of the dish or meal to decompose, in any supported language."
+          },
+          "servings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Number of servings — used to suggest quantities, not to change which ingredients are returned."
+          }
+        }
+      },
+      "server_validation": [
+        "result feeds into search_catalog keywords — it is a string array, not a product list",
+        "allergen and origin must NOT be asserted in this response",
+        "result is cached by dish_name + locale for 24h"
+      ]
+    },
+    {
+      "name": "extract_filters",
+      "description": "Parse natural-language constraints into structured search filters (price range, occasion, dietary requirements, etc.).",
+      "parameters": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The natural-language constraint text to parse."
+          },
+          "locale": {
+            "type": "string",
+            "enum": ["he-IL", "en-US", "ar-IL", "ru-IL"],
+            "default": "he-IL"
+          }
+        }
+      },
+      "server_validation": [
+        "returns a partial filters object; unknown keys stripped",
+        "locale must be in allowed list — others default to he-IL",
+        "price values are advisory and must be validated against actual WC price range"
+      ]
+    },
+    {
+      "name": "list_categories",
+      "description": "Return the tenant's available product categories. Use this to discover valid category_ids before calling search_catalog with category filters. Never invent category IDs.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "parent_id": {
+            "type": ["integer", "null"],
+            "description": "If provided, return only categories under this parent. null returns top-level categories."
+          }
+        }
+      },
+      "server_validation": [
+        "result is scoped to tenant_id — no cross-tenant data",
+        "returns id, name, slug, count — no pricing or inventory",
+        "result is cached per tenant for 10 min"
+      ]
+    }
+  ],
+  "prohibited_tools": {
+    "description": "The following must NEVER appear in the function-calling surface. Any code review finding one of these in Gemini's available tools must be treated as a critical security defect.",
+    "entries": [
+      { "name": "add_to_cart",        "reason": "Commerce is WC Store API domain — model must not trigger cart changes" },
+      { "name": "update_price",        "reason": "Price is set by WooCommerce; AI has no write access" },
+      { "name": "create_order",        "reason": "Never" },
+      { "name": "modify_order",        "reason": "Never" },
+      { "name": "get_user_data",       "reason": "PII; model has no user identity context" },
+      { "name": "get_user_history",    "reason": "PII" },
+      { "name": "run_sql",             "reason": "No free database access" },
+      { "name": "execute_query",       "reason": "No free database access" },
+      { "name": "fetch_url",           "reason": "No model-invented URLs; prevents SSRF" },
+      { "name": "http_get",            "reason": "Same as fetch_url" },
+      { "name": "set_stock",           "reason": "Inventory is WC-owned" },
+      { "name": "update_inventory",    "reason": "Inventory is WC-owned" },
+      { "name": "send_notification",   "reason": "No model-triggered push/email" },
+      { "name": "apply_coupon",        "reason": "Pricing is WC domain" }
+    ]
+  }
+}
