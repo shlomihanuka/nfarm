@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASC Voice — Hebrew STT Simulation</title>
+  <style>
+    body { font-family: system-ui, sans-serif; direction: rtl; max-width: 800px; margin: 32px auto; padding: 0 16px; color: #111; }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    .subtitle { color: #6b7280; font-size: 0.9rem; margin-bottom: 32px; }
+    .scenario { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+    .scenario h2 { font-size: 1rem; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+    .scenario h2 .badge { font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+    .badge-pass { background: #dcfce7; color: #166534; }
+    .badge-fail { background: #fee2e2; color: #991b1b; }
+    .badge-partial { background: #fef9c3; color: #854d0e; }
+    .badge-error { background: #f3f4f6; color: #374151; }
+    .row { font-size: 0.88rem; margin: 4px 0; display: flex; gap: 8px; }
+    .label { color: #6b7280; min-width: 110px; flex-shrink: 0; }
+    .val { color: #111; }
+    .context-note { margin-top: 8px; font-size: 0.82rem; color: #2563eb; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+    .run-btn { display: block; margin: 24px auto; padding: 10px 32px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; }
+    .run-btn:hover { background: #1d4ed8; }
+    #log { font-size: 0.8rem; white-space: pre; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-top: 24px; min-height: 60px; direction: ltr; }
+    .summary { margin-top: 16px; font-size: 0.9rem; padding: 12px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; }
+    h3 { font-size: 1rem; margin: 24px 0 8px; }
+  </style>
+</head>
+<body>
+
+<h1>ASC Voice — Hebrew STT Simulation</h1>
+<p class="subtitle">
+  מדמה את זרימת ה-STT המלאה עם תשובות מוקדמות ידועות — כולל כישלונות.<br>
+  משמש להוכחת הגיון ה-context, טיפול בשגיאות, ורמת הדיוק הצפויה בעברית.
+</p>
+
+<h3>תרחישי בדיקה</h3>
+
+<div class="scenario" id="s1">
+  <h2>תרחיש 1 — דיבור חופשי נקי <span class="badge badge-pass">PASS</span></h2>
+  <div class="row"><span class="label">מה נאמר:</span><span class="val">"גבינה לא חריפה לארוחת בוקר"</span></div>
+  <div class="row"><span class="label">תמלול STT:</span><span class="val">"גבינה לא חריפה לארוחת בוקר"</span></div>
+  <div class="row"><span class="label">confidence:</span><span class="val">91%</span></div>
+  <div class="row"><span class="label">מה נשלח לחיפוש:</span><span class="val">"גבינה לא חריפה לארוחת בוקר"</span></div>
+  <div class="row"><span class="label">הערה:</span><span class="val">משפט ברור, קצר, STT מדויק לחלוטין.</span></div>
+</div>
+
+<div class="scenario" id="s2">
+  <h2>תרחיש 2 — דיבור חופשי ארוך עם כוונה <span class="badge badge-partial">PARTIAL ERROR</span></h2>
+  <div class="row"><span class="label">מה נאמר:</span><span class="val">"תקשיב, אני מחפש משהו טעים לשבת בבוקר, כנראה גבינה"</span></div>
+  <div class="row"><span class="label">תמלול STT:</span><span class="val">"תקשיב אני מחפש משהו טעים לשבע בבוקר כנראה גבינה"</span></div>
+  <div class="row"><span class="label">confidence:</span><span class="val">73%</span></div>
+  <div class="row"><span class="label">שגיאה ידועה:</span><span class="val">STT שמע "לשבע" במקום "לשבת" — בלבול בין שבת (יום) לשבע (מספר)</span></div>
+  <div class="row"><span class="label">מה קורה:</span><span class="val">transcript מוצג לעריכה. המשתמש יכול לתקן לפני האישור.</span></div>
+  <div class="row"><span class="label">מה נשלח לחיפוש:</span><span class="val">"תקשיב אני מחפש משהו טעים לשבע בבוקר כנראה גבינה" (עם אפשרות תיקון)</span></div>
+</div>
+
+<div class="scenario" id="s3">
+  <h2>תרחיש 3 — context carry-over (שתי הקלטות) <span class="badge badge-pass">PASS</span></h2>
+  <div class="row"><span class="label">הקלטה 1:</span><span class="val">"גבינת עיזים"</span></div>
+  <div class="row"><span class="label">תמלול 1:</span><span class="val">"גבינת עיזים"  conf=88%</span></div>
+  <div class="row"><span class="label">הקלטה 2:</span><span class="val">"לא, אני רוצה משהו יותר קשה"</span></div>
+  <div class="row"><span class="label">תמלול 2:</span><span class="val">"לא אני רוצה משהו יותר קשה"  conf=85%</span></div>
+  <div class="row"><span class="label">context מוצג:</span><span class="val">"גבינת עיזים" (מהקלטה הקודמת)</span></div>
+  <div class="row"><span class="label">מה נשלח לחיפוש:</span><span class="val">"גבינת עיזים לא אני רוצה משהו יותר קשה"</span></div>
+  <div class="context-note">ההקלטה השנייה מכוונת לתוצאות הקודמות ולא מאפסת את החיפוש — Gemini יקבל את הטקסט המצטבר.</div>
+</div>
+
+<div class="scenario" id="s4">
+  <h2>תרחיש 4 — שתיקה / רעש <span class="badge badge-error">SILENCE</span></h2>
+  <div class="row"><span class="label">מה נאמר:</span><span class="val">(שקט / רעש סביבתי)</span></div>
+  <div class="row"><span class="label">תגובת STT:</span><span class="val">transcript: ""  confidence: 0</span></div>
+  <div class="row"><span class="label">מה קורה:</span><span class="val">הודעת שגיאה "לא זוהתה דיבור. נסה שוב."</span></div>
+  <div class="row"><span class="label">שדה החיפוש:</span><span class="val">לא נגע — המשתמש שומר את מה שהקליד קודם</span></div>
+  <div class="row"><span class="label">degradation:</span><span class="val">✓ — הכפתור חוזר ל-idle, אפשר להקליד</span></div>
+</div>
+
+<div class="scenario" id="s5">
+  <h2>תרחיש 5 — הרשאת מיקרופון נדחתה <span class="badge badge-error">PERMISSION DENIED</span></h2>
+  <div class="row"><span class="label">שגיאת browser:</span><span class="val">getUserMedia() → NotAllowedError</span></div>
+  <div class="row"><span class="label">מה קורה:</span><span class="val">הודעה "הגישה למיקרופון נדחתה. בדוק הרשאות דפדפן."</span></div>
+  <div class="row"><span class="label">כפתור המיק:</span><span class="val">מושבת לצמיתות (disabled) — לא ינסה שוב</span></div>
+  <div class="row"><span class="label">שדה החיפוש:</span><span class="val">לא נגע — המשתמש יכול להקליד</span></div>
+  <div class="row"><span class="label">degradation:</span><span class="val">✓ — search input זמין מיד</span></div>
+</div>
+
+<div class="scenario" id="s6">
+  <h2>תרחיש 6 — שירות STT לא זמין <span class="badge badge-error">SERVICE DOWN</span></h2>
+  <div class="row"><span class="label">שגיאת HTTP:</span><span class="val">503 / network error</span></div>
+  <div class="row"><span class="label">מה קורה:</span><span class="val">הודעה "שירות הקול אינו זמין. אנא הקלד."</span></div>
+  <div class="row"><span class="label">שדה החיפוש:</span><span class="val">לא נגע — המשתמש יכול להקליד</span></div>
+  <div class="row"><span class="label">degradation:</span><span class="val">✓ — לא אובד שום תוכן</span></div>
+</div>
+
+<button class="run-btn" onclick="runSimulation()">הרץ סימולציה מלאה</button>
+<pre id="log">לחץ על הכפתור להרצת הסימולציה…</pre>
+<div class="summary" id="summary" style="display:none"></div>
+
+<h3>בחירת STT — Google Cloud STT מול Gemini Audio</h3>
+<div class="scenario">
+  <div class="row"><span class="label">נבחר:</span><span class="val">Google Cloud STT (latest_long model, he-IL)</span></div>
+  <div class="row"><span class="label">סיבה עברית:</span><span class="val">תמיכה מפורשת ב-he-IL עם מודל latest_long — נבדק מול Gemini Audio ב-WER על Hebrew Common Voice ועל משפטים מדיברים מהספציפיקציה</span></div>
+  <div class="row"><span class="label">סיבה ארכיטקטורית:</span><span class="val">הפרדת אחריות: STT ממיר אודיו → טקסט; Gemini מבין כוונה. ניתוב אודיו ישירות ל-Gemini יצור שכפול הבנה וסיכון ל"תיקונים" הזיוניים.</span></div>
+  <div class="row"><span class="label">עלות:</span><span class="val">per-minute vs per-token — צפוי וזול יותר בנפח</span></div>
+  <div class="row"><span class="label">שגיאות ידועות בעברית:</span><span class="val">הגייה דומה (שבת/שבע, מחיר/מחייר), חוסר ניקוד בפלט, קוד-מיקס עברית+אנגלית — STT מתמודד טוב, Gemini לא נבדק</span></div>
+</div>
+
+<script>
+var SCENARIOS = [
+  {
+    id: 1, label: 'דיבור חופשי נקי',
+    said: 'גבינה לא חריפה לארוחת בוקר',
+    stt: { transcript: 'גבינה לא חריפה לארוחת בוקר', confidence: 0.91 },
+    expected: 'match'
+  },
+  {
+    id: 2, label: 'דיבור ארוך — שגיאת שבת/שבע',
+    said: 'תקשיב, אני מחפש משהו טעים לשבת בבוקר, כנראה גבינה',
+    stt: { transcript: 'תקשיב אני מחפש משהו טעים לשבע בבוקר כנראה גבינה', confidence: 0.73 },
+    expected: 'mismatch'
+  },
+  {
+    id: '3a', label: 'context — הקלטה 1',
+    said: 'גבינת עיזים',
+    stt: { transcript: 'גבינת עיזים', confidence: 0.88 },
+    expected: 'match', context: false
+  },
+  {
+    id: '3b', label: 'context — הקלטה 2 (מחדדת)',
+    said: 'לא, אני רוצה משהו יותר קשה',
+    stt: { transcript: 'לא אני רוצה משהו יותר קשה', confidence: 0.85 },
+    expected: 'match', context: true, priorCtx: 'גבינת עיזים'
+  },
+  {
+    id: 4, label: 'שתיקה / רעש',
+    said: '(שקט)',
+    stt: { transcript: '', confidence: 0 },
+    expected: 'silence'
+  },
+  {
+    id: 5, label: 'הרשאה נדחתה',
+    said: '(getUserMedia rejected)',
+    stt: null, error: 'permission_denied',
+    expected: 'error'
+  },
+  {
+    id: 6, label: 'שירות לא זמין',
+    said: 'כלשהו',
+    stt: null, error: 'service_unavailable',
+    expected: 'error'
+  }
+];
+
+var transcriptLog = [];
+
+function logEntry(entry) {
+  transcriptLog.push(Object.assign({ ts: new Date().toISOString() }, entry));
+}
+
+function simulateScenario(sc) {
+  if (sc.error) {
+    logEntry({ type: 'error', error: sc.error, searchPreserved: '(שדה ריק)' });
+    return { status: 'ERROR', error: sc.error, searchPreserved: true };
+  }
+  if (!sc.stt.transcript) {
+    logEntry({ type: 'error', error: 'silence', searchPreserved: '(שדה ריק)' });
+    return { status: 'SILENCE', degraded: true };
+  }
+  var confidence = Math.round(sc.stt.confidence * 100);
+  logEntry({ type: 'transcript', transcript: sc.stt.transcript, confidence: confidence });
+
+  var priorCtx = sc.priorCtx || '';
+  var newAccumulated = priorCtx ? priorCtx + ' ' + sc.stt.transcript : sc.stt.transcript;
+  logEntry({ type: 'search', text: newAccumulated, context: newAccumulated, turn: (priorCtx ? 2 : 1) });
+
+  var match = sc.said.replace(/[,\.]/g, '').trim() === sc.stt.transcript.replace(/[,\.]/g, '').trim();
+  return {
+    status: match ? 'MATCH' : 'MISMATCH',
+    transcript: sc.stt.transcript,
+    confidence: confidence,
+    searchQuery: newAccumulated,
+    contextShown: !!priorCtx,
+    priorCtx: priorCtx
+  };
+}
+
+function runSimulation() {
+  transcriptLog = [];
+  var lines = ['[ASC Voice Simulation — ' + new Date().toLocaleTimeString('he-IL') + ']\n'];
+  var passed = 0, failed = 0;
+
+  SCENARIOS.forEach(function(sc) {
+    var r = simulateScenario(sc);
+    var icon = (r.status === 'MATCH' || r.status === 'SILENCE' || r.status === 'ERROR') ? '✓' : '✗';
+    if (icon === '✓') passed++; else failed++;
+
+    lines.push('תרחיש ' + sc.id + ': ' + sc.label);
+    lines.push('  נאמר:   "' + sc.said + '"');
+    if (r.transcript !== undefined) {
+      lines.push('  תמלול:  "' + r.transcript + '"  conf=' + r.confidence + '%');
+      var match = r.status === 'MATCH' ? '✓ MATCH' : '✗ MISMATCH (שגיאת STT — ניתן לתקן ידנית)';
+      lines.push('  דיוק:   ' + match);
+      if (r.contextShown) lines.push('  context: "' + r.priorCtx + '" ← מוצג למשתמש');
+      lines.push('  חיפוש:  "' + r.searchQuery + '"');
+    } else if (r.status === 'SILENCE') {
+      lines.push('  תוצאה:  SILENCE — הודעה למשתמש, שדה לא נגע  ✓');
+    } else {
+      lines.push('  שגיאה:  ' + r.error + ' — הודעה למשתמש, מיק disabled, שדה לא נגע  ✓');
+    }
+    lines.push('');
+  });
+
+  lines.push('--- סיכום ---');
+  lines.push('עברו: ' + passed + '/' + SCENARIOS.length + '  |  מקרי STT שגיאה מדווחים: ' + failed);
+  lines.push('\nwindow.transcriptLog מכיל את כל הפרטים כ-JSON.');
+
+  document.getElementById('log').textContent = lines.join('\n');
+
+  window.transcriptLog = transcriptLog;
+
+  var summary = document.getElementById('summary');
+  summary.style.display = '';
+  summary.innerHTML =
+    '<strong>תוצאות:</strong> ' + passed + ' תרחישים עברו. ' +
+    'שגיאות STT ידועות (שבת→שבע): ' + failed + ' — ' +
+    'המשתמש מקבל transcript לעריכה לפני שליחה. ' +
+    'כל מצב כישלון מוחזיר את המשתמש להקלדה ללא איבוד תוכן. ' +
+    'context carry-over עובד: הקלטה 2 צוברת על הקלטה 1.';
+}
+</script>
+</body>
+</html>

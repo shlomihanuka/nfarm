@@ -351,6 +351,45 @@
   background: #fee2e2;
 }
 
+
+/* ---- Field mic button (spec §17.4 — in native search field wrapper) ---- */
+.asc-field-mic-btn {
+  position: absolute;
+  inset-inline-end: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 50%;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+  z-index: 10;
+}
+.asc-field-mic-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.07);
+  color: #2563eb;
+}
+.asc-field-mic-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+.asc-field-mic-btn:disabled,
+.asc-field-mic-btn.asc-mic-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.asc-field-mic-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* Pulsing animation on the mic icon while recording */
 @keyframes asc-mic-pulse {
   0%, 100% { opacity: 1; }

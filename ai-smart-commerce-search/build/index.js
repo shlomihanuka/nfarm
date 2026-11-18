@@ -156,7 +156,39 @@
           }
         });
       }
+
+      // Mic button injected directly into the native field wrapper (spec §17.4).
+      addMicToField(input);
     });
+  }
+
+  // Inject a mic button into the site's native search field wrapper so customers
+  // can start voice search directly from the page header without opening the drawer first.
+  function addMicToField(input) {
+    if (!voiceReady || input.dataset.ascMicAdded) return;
+    input.dataset.ascMicAdded = 'true';
+
+    var wrapper = input.parentElement;
+    if (!wrapper) return;
+
+    // Make the wrapper a positioning context if it isn't already.
+    var cs = window.getComputedStyle(wrapper);
+    if (cs.position === 'static') wrapper.style.position = 'relative';
+
+    var fieldMic = el('button', {
+      type: 'button',
+      className: 'asc-field-mic-btn',
+      'aria-label': i18n.voiceSearch || 'Voice search',
+      title:        i18n.voiceSearch || 'Voice search',
+    });
+    fieldMic.innerHTML = micIdleSvg();
+    fieldMic.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      startRecording();
+    });
+
+    wrapper.appendChild(fieldMic);
   }
 
   interceptSearchForms();
@@ -457,6 +489,35 @@
 
   var voiceCtx = loadVoiceCtx();
 
+  // ---- Transcript history (session-scoped) ----
+  // Every STT result — good or failed — appended to sessionStorage['asc_voice_log'].
+  // Call window.ascVoiceReport() in the browser console to see all transcripts including failures.
+  function logVoice(entry) {
+    try {
+      var log = JSON.parse(sessionStorage.getItem('asc_voice_log') || '[]');
+      log.push(Object.assign({ ts: new Date().toISOString() }, entry));
+      sessionStorage.setItem('asc_voice_log', JSON.stringify(log));
+    } catch (e) {}
+  }
+  window.ascVoiceReport = function () {
+    try {
+      var log = JSON.parse(sessionStorage.getItem('asc_voice_log') || '[]');
+      if (!log.length) { console.log('[ASC Voice] No transcript history yet.'); return []; }
+      console.group('[ASC Voice] Transcript history (' + log.length + ' entries)');
+      log.forEach(function (e, i) {
+        if (e.type === 'transcript') {
+          console.log((i + 1) + '. TRANSCRIPT  conf=' + e.confidence + '%  "' + e.transcript + '"');
+        } else if (e.type === 'search') {
+          console.log((i + 1) + '. SEARCH       text="' + e.text + '"  turn=' + e.turn);
+        } else {
+          console.log((i + 1) + '. ERROR        ' + e.error + (e.searchPreserved ? '  (typed: "' + e.searchPreserved + '")' : ''));
+        }
+      });
+      console.groupEnd();
+      return log;
+    } catch (e) { return []; }
+  };
+
   // ---- Capability check ----
   var isSecureCtx = !!(window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost');
   var hasMicApi   = !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
@@ -654,9 +715,10 @@
       .then(function (data) {
         setMicState('idle');
         setStatus('');
-        if (data.error) { handleVoiceError(data.error); return; }
+        if (data.error) { logVoice({ type: 'error', error: data.error }); handleVoiceError(data.error); return; }
         var transcript = (data.transcript || '').trim();
-        if (!transcript) { handleVoiceError('silence'); return; }
+        if (!transcript) { logVoice({ type: 'error', error: 'silence' }); handleVoiceError('silence'); return; }
+        logVoice({ type: 'transcript', transcript: transcript, confidence: data.confidence || 0 });
         showTranscriptPreview(transcript, data.confidence || 0);
       })
       .catch(function (err) {
@@ -768,6 +830,7 @@
     voiceCtx.turns.push({ text: trimmed, ts: Date.now() });
     voiceCtx.accumulated = newAccumulated;
     saveVoiceCtx(voiceCtx);
+    logVoice({ type: 'search', text: newAccumulated, turn: voiceCtx.turns.length });
 
     // Update the search input and fire the search
     searchInput.value = newAccumulated;
@@ -789,6 +852,7 @@
   function handleVoiceError(type) {
     setMicState('idle');
     hideTranscriptPreview();
+    logVoice({ type: 'error', error: type, searchPreserved: searchInput.value });
     // The search input is never touched here — user keeps what they typed.
 
     var msgs = {
@@ -804,11 +868,18 @@
 
     setStatus(msgs[type] || msgs.service_unavailable, true);
 
-    // Permanently disable the mic button when hardware/permission is unavailable
-    if ((type === 'permission_denied' || type === 'no_microphone') && micBtn) {
-      micBtn.disabled = true;
-      micBtn.classList.add('asc-mic-disabled');
-      micBtn.title = msgs[type];
+    // Permanently disable both mic buttons when hardware/permission is unavailable
+    if (type === 'permission_denied' || type === 'no_microphone') {
+      if (micBtn) {
+        micBtn.disabled = true;
+        micBtn.classList.add('asc-mic-disabled');
+        micBtn.title = msgs[type];
+      }
+      document.querySelectorAll('.asc-field-mic-btn').forEach(function (btn) {
+        btn.disabled = true;
+        btn.classList.add('asc-mic-disabled');
+        btn.title = msgs[type];
+      });
     }
   }
 
