@@ -494,6 +494,53 @@ body {
   outline: 2px solid var(--asc-blue); outline-offset: 2px;
 }
 
+/* ================================================================
+   R5 — Editorial connectors, promotions, inline substitutes
+   ================================================================ */
+.asc-connector {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 0; font-size: 0.78rem; color: var(--asc-gray-500);
+  font-style: italic; line-height: 1.45; font-family: inherit;
+  animation: asc-fade-in 0.2s ease;
+}
+.asc-connector::before, .asc-connector::after {
+  content: ''; flex: 1; height: 1px; background: var(--asc-gray-200);
+}
+.asc-connector.asc-guide {
+  font-size: 0.84rem; color: var(--asc-gray-700); font-style: normal;
+  font-weight: 500; padding: 2px 0 8px;
+}
+.asc-connector.asc-guide::before, .asc-connector.asc-guide::after { display: none; }
+
+.asc-promo-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.7rem; font-weight: 700; padding: 2px 7px;
+  border-radius: 20px; background: #fef3c7; color: #92400e;
+  border: 1px solid #fcd34d; width: fit-content;
+  font-family: inherit; font-style: normal;
+}
+.asc-card.asc-promo { border-color: #fcd34d; background: #fffbeb; }
+.asc-card.asc-promo:hover, .asc-card.asc-promo:focus-within {
+  border-color: #f59e0b; box-shadow: 0 2px 10px rgba(245,158,11,0.14);
+}
+
+.asc-card.asc-has-sub { grid-column: 1 / -1; flex-direction: column; }
+.asc-card-main { display: flex; align-items: flex-start; gap: 12px; }
+.asc-substitute-block {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--asc-gray-200);
+}
+.asc-substitute-label {
+  font-size: 0.72rem; font-weight: 700; color: var(--asc-green);
+  flex-shrink: 0; font-family: inherit; white-space: nowrap;
+}
+.asc-substitute-info { flex: 1; min-width: 120px; }
+.asc-substitute-name { font-size: 0.88rem; font-weight: 600; color: var(--asc-gray-900); font-family: inherit; }
+.asc-substitute-reason { font-size: 0.75rem; color: var(--asc-gray-500); font-style: italic; line-height: 1.35; font-family: inherit; }
+.asc-substitute-price { font-size: 0.88rem; font-weight: 600; color: var(--asc-gray-700); flex-shrink: 0; font-family: inherit; }
+.asc-substitute-add { flex: 0 0 auto !important; padding: 7px 12px !important; font-size: 0.82rem !important; min-width: auto !important; border-radius: 8px; }
+
 /* ============================================================
    OPTIONS MODAL — floats above drawer
    ============================================================ */
@@ -830,123 +877,220 @@ window.ascConfig = {
             reject(new DOMException('Aborted', 'AbortError'));
             return;
           }
-          var products = makeDemoProducts(q, trackB);
-
-          var assistant = null;
           if (trackB) {
+            /* Track B: grouped AI response with guiding sentence */
             var lq = q;
             var isQuestion = lq.indexOf('?') !== -1 || lq.indexOf('מה') !== -1 ||
                              lq.indexOf('כמה') !== -1 || lq.indexOf('האם') !== -1 ||
                              lq.indexOf('למה') !== -1;
-            if (isQuestion) {
-              assistant = {
-                message: 'שאלה טובה! בהתבסס על הקטלוג שלנו, הנה המוצרים הרלוונטיים ביותר עם ההסברים שלי לצד כל אחד.',
-                tone: 'answer',
-                follow_ups: ['ספר לי עוד על זה', 'יש גרסא ללא לקטוז?', 'מה הכי טרי היום?']
-              };
-            } else {
-              assistant = {
-                message: 'מצאתי ' + products.length + ' מוצרים שמתאימים לחיפוש שלך — ממוינים לפי רלוונטיות ואיכות.',
-                tone: 'suggest',
-                follow_ups: [
-                  'הראה לי גם ביו-דינמי',
-                  'מה הכי טרי היום?',
-                  'כמה זה עולה לארוחה של 4?',
-                  'יש גרסא ללא לקטוז?',
-                ]
-              };
-            }
-          }
 
-          resolve(new Response(JSON.stringify({
-            products:  products,
-            total:     products.length,
-            source:    source,
-            assistant: assistant,
-          }), { headers: { 'Content-Type': 'application/json' } }));
+            var GUIDING = {
+              'גבינה':      'הגבינות הקשות הן הבחירה — הוסף שמן זית לצד המנה, או ריבת תאנים לאירוח.',
+              'שמן':        'שמן הזית הכתית הוא הבסיס — ודא שהוא מיצוי קר ראשון לטעם המלא.',
+              'ארוחת שבת':  'ל-5 אנשים עדיף שתי גבינות שונות — גאודה לפתיחה, פרמיג\'יאנו למנה.',
+            };
+            var guiding = GUIDING[q] || (isQuestion
+              ? 'שאלה טובה. הנה המוצרים עם הסבר לכל אחד — סנן לפי הצורך.'
+              : 'הנה מה שמצאתי — הקבוצות הראשונות הן ההתאמה הטובה ביותר.');
+
+            var groups = makeDemoGroups(q);
+            var totalCount = groups.reduce(function(sum, g) { return sum + g.products.length; }, 0);
+            var follow_ups = isQuestion
+              ? ['ספר לי עוד על זה', 'יש גרסא ללא לקטוז?', 'מה הכי טרי היום?']
+              : ['הראה לי גם ביו-דינמי', 'מה הכי טרי היום?', 'כמה זה עולה לארוחה של 4?', 'יש גרסא ללא לקטוז?'];
+
+            resolve(new Response(JSON.stringify({
+              groups:           groups,
+              products:         [],     /* legacy compat */
+              total:            totalCount,
+              source:           'cloud',
+              guiding_sentence: guiding,
+              assistant:        { message: guiding, guiding_sentence: guiding, tone: isQuestion ? 'answer' : 'suggest', follow_ups: follow_ups },
+              follow_ups:       follow_ups,
+            }), { headers: { 'Content-Type': 'application/json' } }));
+          } else {
+            /* Track A: fast provisional flat list (no AI copy, no groups) */
+            var flat = makeDemoProductsFlat(q);
+            resolve(new Response(JSON.stringify({
+              products: flat,
+              total:    flat.length,
+              source:   'local',
+              groups:   null,
+              assistant: null,
+            }), { headers: { 'Content-Type': 'application/json' } }));
+          }
         }, delay);
       });
     }
     return orig(url, opts);
   };
 
-  /* ---- Demo product catalog ---- */
-  /* Note: requires_options is derived from add_to_cart.text === 'Select options'
-     — this is the ONLY reliable signal for weighted/option products on the nfarm theme.
-     type, has_options, variations all report "simple" for these products. */
-  var DEMO_PRODUCTS = [
+  /* ---- Demo product catalogue (R5) ----
+     Products are arranged in groups. Each group has a rationale (connector text)
+     that the AI returns. on_sale reflects real catalogue data — never faked.
+     substitute is populated only for out-of-stock products. */
+  var DEMO_GROUPS = [
+    /* Group 1: hard cheeses — primary matches, slots 1-2 */
     {
-      id: 1,
-      name: 'פרמיג\'יאנו רג\'יאנו',
-      emoji: '🧀',
-      /* price_html is the authoritative price — prices.price would show ₪0.19 (price/gram) */
-      price_html: '<span>₪37.80</span>',
-      in_stock: true,
-      ai_reason: 'גבינה קשה עם 24+ חודשי הבשלה — מתאים לפסטות, ריזוטו וסלטים.',
-      add_to_cart: { text: 'Select options', url: '#product-1' },
-      weight_display: '200 גרם',
-      price_per_unit: '₪18.90 / 100 גרם',
-      options: [
-        { id: 'cut_type', label: 'ברירת חיתוך', required: true, choices: ['גוש', 'מגורד'] }
-      ]
+      key: 'hard_cheeses',
+      rationale: 'שתי גבינות קשות — שונות בעוצמה. פרמיג\'יאנו לפסטות וריזוטו, גאודה לצלחות גבינה.',
+      has_promotion: true,  /* one product in group is on_sale */
+      products: [
+        {
+          id: 1, name: 'פרמיג\'יאנו רג\'יאנו', emoji: '🧀',
+          price_html: '<span>₪37.80</span>', in_stock: true, on_sale: false,
+          ai_reason: 'גבינה קשה עם 24+ חודשי הבשלה — מתאים לפסטות, ריזוטו וסלטים.',
+          add_to_cart: { text: 'Select options', url: '#product-1' },
+          weight_display: '200 גרם', price_per_unit: '₪18.90 / 100 גרם',
+          options: [{ id: 'cut_type', label: 'ברירת חיתוך', required: true, choices: ['גוש', 'מגורד'] }],
+        },
+        {
+          id: 2, name: 'גבינת גאודה מיושנת', emoji: '🫙',
+          price_html: '<del>₪52.00</del> <ins>₪42.00</ins>',
+          in_stock: true, on_sale: true,
+          ai_reason: 'בשלות של 60 יום — מתאים לאוהבי טעמים עזים. במבצע השבוע.',
+          add_to_cart: { text: 'Select options', url: '#product-2' },
+          weight_display: '250 גרם', price_per_unit: '₪16.80 / 100 גרם',
+          options: [
+            { id: 'cut_type', label: 'ברירת חיתוך', required: true, choices: ['גוש', 'מגורד'] },
+            { id: 'aging', label: 'רמת ישון', required: false, choices: ['בינונית (8 חודש)', 'מיושנת (12 חודש)'] },
+          ],
+        },
+      ],
     },
+    /* Group 2: accompaniments — slots 3-5; product 5 (OOS+sub) is 5th overall → visible */
     {
-      id: 2,
-      name: 'גבינת גאודה מיושנת',
-      emoji: '🫙',
-      price_html: '<span>₪52.00</span>',
-      in_stock: true,
-      ai_reason: 'בשלות של 60 יום — מתאים לאוהבי טעמים עזים ולצלחות גבינה.',
-      add_to_cart: { text: 'Select options', url: '#product-2' },
-      weight_display: '250 גרם',
-      price_per_unit: '₪20.80 / 100 גרם',
-      options: [
-        { id: 'cut_type', label: 'ברירת חיתוך', required: true, choices: ['גוש', 'מגורד'] },
-        { id: 'aging', label: 'רמת ישון', required: false, choices: ['בינונית (8 חודש)', 'מיושנת (12 חודש)', 'ישנה מאוד (18+ חודש)'] }
-      ]
+      key: 'accompaniments',
+      rationale: 'אלה ישלימו את הגבינה על השולחן — שמן זית, דבש, וריבה.',
+      has_promotion: false,
+      products: [
+        {
+          id: 4, name: 'שמן זית כתית מעולה', emoji: '🫒',
+          price_html: '<span>₪56.00</span>', in_stock: true, on_sale: false,
+          ai_reason: 'מיצוי קר ראשון — שומר טעמים לתיבול ולהגשה.',
+          add_to_cart: { text: 'הוספה לסל', url: '#product-4' },
+        },
+        {
+          id: 6, name: 'דבש פרחי שדה', emoji: '🍯',
+          price_html: '<span>₪42.00</span>', in_stock: true, on_sale: false,
+          ai_reason: 'מופק בחווה — מתאים לשילוב עם גבינה צהובה על לחם.',
+          add_to_cart: { text: 'הוספה לסל', url: '#product-6' },
+        },
+        {
+          id: 5, name: 'שמן עשבי תיבול', emoji: '🌿',
+          price_html: '<span>₪48.00</span>', in_stock: false, on_sale: false,
+          ai_reason: 'שילוב של עשבי תיבול טריים — מתאים לדגים ופסטות.',
+          add_to_cart: { text: 'הוספה לסל', url: '#product-5' },
+          substitute: {
+            id: 4, name: 'שמן זית כתית מעולה', emoji: '🫒',
+            price_html: '<span>₪56.00</span>', price_display: '<span>₪56.00</span>',
+            permalink: '#product-4', in_stock: true,
+            reason: 'שמן עשבי תיבול אזל — שמן הזית נותן עומק ניחוחי דומה לדגים ולפסטות.',
+          },
+        },
+      ],
     },
-    { id: 3,  name: 'גבינת עיזים רכה',      emoji: '🐐', price_html: '<span>₪34.00</span>', in_stock: true,  ai_reason: 'פחות שומן מגבינה צהובה, טעם עדין — טוב לסלטים ופסטות קלות.', add_to_cart: { text: 'הוספה לסל', url: '#product-3' } },
-    { id: 4,  name: 'שמן זית כתית מעולה',   emoji: '🫒', price_html: '<span>₪56.00</span>', in_stock: true,  ai_reason: 'מיצוי קר ראשון — שומר טעמים לתיבול ולהגשה.', add_to_cart: { text: 'הוספה לסל', url: '#product-4' } },
-    { id: 5,  name: 'שמן עשבי תיבול',       emoji: '🌿', price_html: '<span>₪48.00</span>', in_stock: false, ai_reason: 'שילוב של עשבי תיבול טריים — מתאים לדגים ופסטות.', add_to_cart: { text: 'הוספה לסל', url: '#product-5' } },
-    { id: 6,  name: 'דבש פרחי שדה',         emoji: '🍯', price_html: '<span>₪42.00</span>', in_stock: true,  ai_reason: 'מופק בחווה — מתאים לשילוב עם גבינה צהובה על לחם.', add_to_cart: { text: 'הוספה לסל', url: '#product-6' } },
-    { id: 7,  name: 'יוגורט ביתי טבעי',     emoji: '🥛', price_html: '<span>₪14.00</span>', in_stock: true,  ai_reason: 'ללא סוכר מוסף, רמת שומן בינונית — מתאים לבוקר.', add_to_cart: { text: 'הוספה לסל', url: '#product-7' } },
-    { id: 8,  name: 'חמאת חוות',            emoji: '🧈', price_html: '<span>₪22.00</span>', in_stock: true,  ai_reason: 'לא מלוחה — מתאים לאפייה ולהגשה עם לחם כפרי.', add_to_cart: { text: 'הוספה לסל', url: '#product-8' } },
-    { id: 9,  name: 'ממרח גבינה מעושנת',    emoji: '🧆', price_html: '<span>₪29.00</span>', in_stock: true,  ai_reason: 'עישון קר של 48 שעות — מוסיף עומק לחטיפים ולפסטות.', add_to_cart: { text: 'הוספה לסל', url: '#product-9' } },
-    { id: 10, name: 'לבנה עשבי תיבול',      emoji: '🌱', price_html: '<span>₪18.00</span>', in_stock: true,  ai_reason: 'ממרח קליל — מתאים לפתיחת ארוחות ולציפוי לחמניות.', add_to_cart: { text: 'הוספה לסל', url: '#product-10' } },
-    { id: 11, name: 'שמן שקדים גולמי',      emoji: '🌰', price_html: '<span>₪64.00</span>', in_stock: false, ai_reason: 'עשיר בוויטמין E — שימוש לאפייה ולרטבי סלט.', add_to_cart: { text: 'הוספה לסל', url: '#product-11' } },
-    { id: 12, name: 'ריבת תאנים תוצרת בית', emoji: '🫐', price_html: '<span>₪26.00</span>', in_stock: true,  ai_reason: 'מתוק-חריף — שילוב מצוין עם גבינה קשה ויין.', add_to_cart: { text: 'הוספה לסל', url: '#product-12' } },
+    /* Group 3: soft cheeses — slot 6+ */
+    {
+      key: 'soft_cheeses',
+      rationale: 'אפשרות קלה יותר — פחות חריפות, מתאים למי שמעדיף טעמים עדינים.',
+      has_promotion: false,
+      products: [
+        {
+          id: 3, name: 'גבינת עיזים רכה', emoji: '🐐',
+          price_html: '<span>₪34.00</span>', in_stock: true, on_sale: false,
+          ai_reason: 'פחות שומן מגבינה צהובה, טעם עדין — טוב לסלטים ופסטות קלות.',
+          add_to_cart: { text: 'הוספה לסל', url: '#product-3' },
+        },
+        {
+          id: 9, name: 'ממרח גבינה מעושנת', emoji: '🧆',
+          price_html: '<span>₪29.00</span>', in_stock: true, on_sale: false,
+          ai_reason: 'עישון קר של 48 שעות — מוסיף עומק לחטיפים ולפסטות.',
+          add_to_cart: { text: 'הוספה לסל', url: '#product-9' },
+        },
+      ],
+    },
+    /* Group 4: dairy basics — beyond initial show */
+    {
+      key: 'dairy_basics',
+      rationale: 'מוצרי חלב בסיסיים שמשלימים שולחן גבינות — יוגורט, חמאה, לבנה וריבה.',
+      has_promotion: true,
+      products: [
+        {
+          id: 7, name: 'יוגורט ביתי טבעי', emoji: '🥛',
+          price_html: '<span>₪14.00</span>', in_stock: true, on_sale: false,
+          ai_reason: 'ללא סוכר מוסף, רמת שומן בינונית — מתאים לבוקר.',
+          add_to_cart: { text: 'הוספה לסל', url: '#product-7' },
+        },
+        {
+          id: 8, name: 'חמאת חוות', emoji: '🧈',
+          price_html: '<span>₪22.00</span>', in_stock: true, on_sale: false,
+          ai_reason: 'לא מלוחה — מתאים לאפייה ולהגשה עם לחם כפרי.',
+          add_to_cart: { text: 'הוספה לסל', url: '#product-8' },
+        },
+        {
+          id: 10, name: 'לבנה עשבי תיבול', emoji: '🌱',
+          price_html: '<span>₪18.00</span>', in_stock: true, on_sale: false,
+          ai_reason: 'ממרח קליל — מתאים לפתיחת ארוחות ולציפוי לחמניות.',
+          add_to_cart: { text: 'הוספה לסל', url: '#product-10' },
+        },
+        {
+          id: 12, name: 'ריבת תאנים תוצרת בית', emoji: '🫐',
+          price_html: '<del>₪26.00</del> <ins>₪20.00</ins>',
+          in_stock: true, on_sale: true,
+          ai_reason: 'מתוק-חריף — שילוב מצוין עם גבינה קשה ויין. במבצע.',
+          add_to_cart: { text: 'הוספה לסל', url: '#product-12' },
+        },
+      ],
+    },
   ];
 
-  function makeDemoProducts(q, trackB) {
-    var base = DEMO_PRODUCTS.filter(function(p) {
-      var lq = q.toLowerCase();
-      return lq.length < 2 || p.name.includes(lq) || p.ai_reason.includes(lq) || true;
-    });
-    return base.map(function(p) {
-      var requiresOptions = p.add_to_cart && p.add_to_cart.text === 'Select options';
-      var out = {
-        id:               p.id,
-        name:             p.name,
-        permalink:        '#product-' + p.id,
-        image:            null,
-        emoji:            p.emoji,
-        /* price_display = price_html: ALWAYS use this for display.
-           Never use prices.price — for weighted items it is price-per-gram (₪0.19 not ₪37.80). */
-        price_html:       p.price_html,
-        price_display:    p.price_html,
-        in_stock:         p.in_stock,
-        type:             'simple',
-        requires_options: requiresOptions,
-        options_url:      requiresOptions ? (p.add_to_cart.url || ('#product-' + p.id)) : null,
-        options:          requiresOptions ? (p.options || []) : [],
-        weight_display:   p.weight_display || null,
-        price_per_unit:   p.price_per_unit || null,
+  /* Maps DEMO_GROUPS → { groups, guiding_sentence } or flat products for provisional */
+  function makeProductObj(p, includeAiFields) {
+    var requiresOptions = p.add_to_cart && p.add_to_cart.text === 'Select options';
+    var out = {
+      id:               p.id,
+      name:             p.name,
+      permalink:        '#product-' + p.id,
+      image:            null,
+      emoji:            p.emoji,
+      price_html:       p.price_html,
+      price_display:    p.price_html,
+      in_stock:         p.in_stock,
+      on_sale:          p.on_sale || false,
+      type:             'simple',
+      requires_options: requiresOptions,
+      options_url:      requiresOptions ? (p.add_to_cart.url || ('#product-' + p.id)) : null,
+      options:          requiresOptions ? (p.options || []) : [],
+      weight_display:   p.weight_display || null,
+      price_per_unit:   p.price_per_unit || null,
+      substitute:       (p.substitute && !p.in_stock) ? p.substitute : null,
+    };
+    if (includeAiFields) {
+      out.ai_reason = p.ai_reason;
+    }
+    return out;
+  }
+
+  /* For Track B: return { groups, guiding_sentence } */
+  function makeDemoGroups(q) {
+    return DEMO_GROUPS.map(function(g) {
+      return {
+        key:           g.key,
+        rationale:     g.rationale,
+        has_promotion: g.has_promotion || false,
+        products:      g.products.map(function(p) { return makeProductObj(p, true); }),
       };
-      if (trackB) {
-        out.ai_reason = p.ai_reason;
-      }
-      return out;
     });
+  }
+
+  /* For Track A: flat array of first 6 products (no AI copy) */
+  function makeDemoProductsFlat(q) {
+    var flat = [];
+    DEMO_GROUPS.forEach(function(g) {
+      g.products.forEach(function(p) { flat.push(makeProductObj(p, false)); });
+    });
+    return flat.slice(0, 6);
   }
 })();
 </script>
@@ -1013,15 +1157,17 @@ window.ascConfig = {
   }
 
   /* ---- State ---- */
-  let isOpen        = false;
-  let searchTimer   = null;
-  let currentQuery  = '';
-  let currentAll    = [];
-  let shownCount    = 0;
-  let fullDone      = false;
-  let aborts        = [];
-  let aiBarTimer    = null;
-  let cartNonce     = cfg.nonce || '';
+  let isOpen              = false;
+  let searchTimer         = null;
+  let currentQuery        = '';
+  let currentAll          = [];
+  let shownCount          = 0;
+  let fullDone            = false;
+  let aborts              = [];
+  let aiBarTimer          = null;
+  let currentGuidingSentence = '';
+  let currentGroups          = null;
+  let cartNonce           = cfg.nonce || '';
 
   const INITIAL_SHOW = 6;
   const AI_MSGS = [
@@ -1059,9 +1205,6 @@ window.ascConfig = {
 
   const statusBar = el('div', { className: 'asc-status', 'aria-live': 'polite', 'aria-atomic': 'true' });
 
-  /* AI message area — shows assistant.message above the product grid */
-  const aiMessage = el('div', { className: 'asc-ai-message', role: 'status', 'aria-live': 'polite' });
-
   const resultsEl = el('div', {
     className:   'asc-results',
     role:        'list',
@@ -1075,13 +1218,14 @@ window.ascConfig = {
     'aria-label': 'הצעות להמשך',
   });
 
+  /* R5: AI message removed from top banner — guiding sentence renders inside resultsEl */
   const drawer = el('div', {
     className:    'asc-drawer',
     role:         'dialog',
     'aria-modal': 'true',
     'aria-label': i18n.drawerLabel || 'חיפוש מוצרים',
     dir: 'rtl',
-  }, header, aiBar, statusBar, aiMessage, resultsEl, chipsEl);
+  }, header, aiBar, statusBar, resultsEl, chipsEl);
 
   document.body.appendChild(overlay);
   document.body.appendChild(drawer);
@@ -1193,11 +1337,9 @@ window.ascConfig = {
       clearResults();
       hideAiBar();
       clearChips();
-      renderAiMessage('', 'none', false);
       return;
     }
     renderSkeletons(INITIAL_SHOW);
-    renderAiMessage(AI_MSGS[0], 'suggest', true);
     searchTimer = setTimeout(function () { runSearch(q); }, 300);
   });
 
@@ -1207,8 +1349,9 @@ window.ascConfig = {
     currentAll = [];
     shownCount = 0;
     fullDone = false;
+    currentGroups = null;
+    currentGuidingSentence = '';
     cancelPending();
-    renderAiMessage(AI_MSGS[0], 'suggest', true);
 
     /* Track A — fast provisional results */
     var ctrlA = new AbortController();
@@ -1228,7 +1371,7 @@ window.ascConfig = {
     })
     .catch(function(e) { if (e.name !== 'AbortError') console.error('Track A', e); });
 
-    /* Track B — full AI results */
+    /* Track B — full AI results with editorial grouping */
     var ctrlB = new AbortController();
     aborts.push(ctrlB);
     showAiBar();
@@ -1241,26 +1384,32 @@ window.ascConfig = {
       if (currentQuery !== q) return;
       fullDone = true;
       hideAiBar();
-      currentAll = data.products || [];
-      shownCount = Math.min(currentAll.length, INITIAL_SHOW);
-      renderVisible();
 
-      /* Show assistant message above results */
-      var asst = data.assistant;
-      if (asst && asst.tone !== 'none' && asst.message) {
-        renderAiMessage(asst.message, asst.tone, false);
-        if (asst.follow_ups && asst.follow_ups.length) renderChips(asst.follow_ups);
+      var hasGroups = data && data.groups && data.groups.length;
+      if (hasGroups) {
+        /* R5: intelligence lives in the list — no top banner */
+        currentGroups          = data.groups;
+        currentGuidingSentence = (data.guiding_sentence) || '';
+        renderGrouped(data.groups, currentGuidingSentence);
       } else {
-        renderAiMessage('', 'none', false);
-        clearChips();
+        /* Fallback: flat results */
+        currentAll = data.products || [];
+        shownCount = Math.min(currentAll.length, INITIAL_SHOW);
+        renderVisible();
       }
 
-      if (!currentAll.length) setStatus(i18n.noResults || 'לא נמצאו מוצרים');
+      var asst = data.assistant;
+      var chips = data.follow_ups || (asst && asst.follow_ups) || [];
+      if (chips.length) renderChips(chips);
+      else clearChips();
+
+      if (!currentAll.length && !(data.groups && data.groups.some(function(g) { return g.products && g.products.length; }))) {
+        setStatus(i18n.noResults || 'לא נמצאו מוצרים');
+      }
     })
     .catch(function(e) {
       if (e.name !== 'AbortError') {
         hideAiBar();
-        renderAiMessage('', 'none', false);
         if (currentQuery === q && !currentAll.length) setStatus('שגיאה בחיפוש', true);
       }
     });
@@ -1294,6 +1443,62 @@ window.ascConfig = {
     }
     if (!visible.length && fullDone) {
       resultsEl.appendChild(el('p', { className: 'asc-no-results' }, i18n.noResults || 'לא נמצאו מוצרים'));
+    }
+  }
+
+  /* ---- R5: Grouped render with editorial connectors ---- */
+  function buildConnector(text, isGuide) {
+    return el('div', {
+      className:   'asc-connector' + (isGuide ? ' asc-guide' : ''),
+      role:        'presentation',
+      'aria-hidden': 'true',
+    }, text);
+  }
+
+  /* Renders groups array into resultsEl with connectors BETWEEN groups.
+     Guiding sentence appears before the first group as the primary context setter.
+     "Show more" re-renders with all groups visible. */
+  function renderGrouped(groups, guidingSentence) {
+    while (resultsEl.firstChild) resultsEl.removeChild(resultsEl.firstChild);
+    currentAll = [];
+    if (!groups || !groups.length) return;
+
+    /* Flatten products for INITIAL_SHOW tracking */
+    var flat = [];
+    groups.forEach(function(g) {
+      (g.products || []).forEach(function(p, idx) {
+        flat.push({ p: p, isPromo: g.has_promotion || p.on_sale || false, connector: idx === 0 ? (g.rationale || '') : '', isFirst: flat.length === 0 });
+      });
+      (g.products || []).forEach(function(p) { currentAll.push(p); });
+    });
+
+    var total   = flat.length;
+    var visible = flat.slice(0, INITIAL_SHOW);
+    shownCount  = visible.length;
+    setStatus('');
+
+    if (guidingSentence && guidingSentence.trim()) {
+      resultsEl.appendChild(buildConnector(guidingSentence, true));
+    }
+
+    visible.forEach(function(item) {
+      /* Connector before first product of each group
+         (skip for the very first group when guiding sentence is already shown) */
+      if (item.connector && !(item.isFirst && guidingSentence)) {
+        resultsEl.appendChild(buildConnector(item.connector, false));
+      }
+      resultsEl.appendChild(buildCard(item.p));
+    });
+
+    if (total > shownCount) {
+      var remaining = total - shownCount;
+      var more = el('button', { className: 'asc-show-more', type: 'button' },
+        'הצג עוד ' + remaining + ' מוצרים');
+      more.addEventListener('click', function() {
+        shownCount = total;
+        renderGrouped(groups, guidingSentence);
+      });
+      resultsEl.appendChild(more);
     }
   }
 
@@ -1404,6 +1609,11 @@ window.ascConfig = {
     priceEl.innerHTML = p.price_display || p.price_html || '';
     bodyChildren.push(priceEl);
 
+    /* R5: promotion badge — only when on_sale = true from catalogue; never faked */
+    if (p.on_sale) {
+      bodyChildren.push(el('span', { className: 'asc-promo-badge' }, '🏷 מבצע'));
+    }
+
     var stockEl = el('span', {
       className: 'asc-stock-badge ' + (p.in_stock ? 'in-stock' : 'out-of-stock'),
     }, p.in_stock ? (i18n.inStock || 'במלאי') : (i18n.outOfStock || 'אזל מהמלאי'));
@@ -1413,7 +1623,49 @@ window.ascConfig = {
     bodyChildren.push(actionsEl);
 
     var body = el('div', { className: 'asc-card-body' }, ...bodyChildren);
-    return el('div', { className: 'asc-card', role: 'listitem', tabindex: '0' }, imgEl, body);
+    var cardClass = 'asc-card' + (p.on_sale ? ' asc-promo' : '');
+
+    /* R5: out-of-stock with substitute → full-width card + inline substitute row */
+    if (!p.in_stock && p.substitute) {
+      var sub = p.substitute;
+      var subPriceEl = el('div', { className: 'asc-substitute-price' });
+      subPriceEl.innerHTML = sub.price_display || sub.price_html || '';
+
+      var subAddBtn = el('button', {
+        type: 'button',
+        className: 'asc-integrated-add asc-substitute-add',
+        'data-id': String(sub.id),
+        disabled: sub.in_stock ? null : 'disabled',
+        'aria-label': (i18n.addToCart || 'הוספה לסל') + ': ' + sub.name,
+      }, i18n.addToCart || 'הוספה לסל');
+      (function(btn, addLabel) {
+        btn.addEventListener('click', function() {
+          btn.textContent = i18n.addedToCart || 'נוסף!';
+          btn.classList.add('asc-added');
+          btn.disabled = true;
+          setTimeout(function() {
+            btn.textContent = addLabel;
+            btn.classList.remove('asc-added');
+            btn.disabled = !sub.in_stock;
+          }, 1800);
+        });
+      })(subAddBtn, i18n.addToCart || 'הוספה לסל');
+
+      var subBlock = el('div', { className: 'asc-substitute-block' },
+        el('span', { className: 'asc-substitute-label' }, '↩ חלופה:'),
+        el('div', { className: 'asc-substitute-info' },
+          el('div', { className: 'asc-substitute-name' }, sub.name),
+          el('div', { className: 'asc-substitute-reason' }, sub.reason || '')
+        ),
+        subPriceEl,
+        subAddBtn
+      );
+
+      var mainRow = el('div', { className: 'asc-card-main' }, imgEl, body);
+      return el('div', { className: cardClass + ' asc-has-sub', role: 'listitem', tabindex: '0' }, mainRow, subBlock);
+    }
+
+    return el('div', { className: cardClass, role: 'listitem', tabindex: '0' }, imgEl, body);
   }
 
   /* ---- Options modal ---- */
@@ -1549,24 +1801,8 @@ window.ascConfig = {
     aiBar.classList.remove('asc-active');
   }
 
-  /* ---- AI message (assistant.message shown above results) ---- */
-  function renderAiMessage(msg, tone, streaming) {
-    if (!msg || tone === 'none') {
-      aiMessage.classList.remove('asc-visible');
-      aiMessage.innerHTML = '';
-      return;
-    }
-    var label = el('div', { className: 'asc-ai-message-label' },
-      (i18n.aiLabel || 'AI'));
-    var text = el('p', {
-      className: 'asc-ai-message-text' + (streaming ? ' asc-streaming' : ''),
-    });
-    text.textContent = msg;
-    aiMessage.innerHTML = '';
-    aiMessage.appendChild(label);
-    aiMessage.appendChild(text);
-    aiMessage.classList.add('asc-visible');
-  }
+  /* R5: AI message removed from top banner. Guiding sentence renders inside resultsEl via renderGrouped(). */
+  function renderAiMessage() { /* no-op — kept for safety in case of stray calls */ }
 
   /* ---- Follow-up chips ---- */
   function renderChips(chips) {
