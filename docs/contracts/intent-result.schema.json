@@ -18,9 +18,34 @@
         "ingredient_search",
         "category_browse",
         "specific_product",
-        "occasion_shopping"
+        "occasion_shopping",
+        "question_answering",
+        "substitute_request"
       ],
-      "description": "High-level classification of the user's intent."
+      "description": "High-level classification of the user's intent. question_answering: user asked a factual question about a product or ingredient. substitute_request: user asked for an alternative to a specific product."
+    },
+    "assistant": {
+      "type": "object",
+      "description": "The AI assistant's conversational response to the query. Rendered above the product grid.",
+      "required": ["message", "tone", "follow_ups"],
+      "additionalProperties": false,
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "The assistant's response text. Empty string when tone is none."
+        },
+        "tone": {
+          "type": "string",
+          "enum": ["answer", "clarify", "suggest", "none"],
+          "description": "answer: factual answer to a question. clarify: AI needs more info. suggest: recommendation. none: no message to show."
+        },
+        "follow_ups": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Suggested follow-up queries shown as chips below the results.",
+          "maxItems": 5
+        }
+      }
     },
     "keywords": {
       "type": "array",

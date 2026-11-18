@@ -17,6 +17,41 @@
     "type": { "type": "string" },
     "is_weighted": { "type": "boolean" },
     "price_note": { "type": "string" },
+    "requires_options": {
+      "type": "boolean",
+      "description": "True when add_to_cart.text === 'Select options' on the Store API. Drives the 'אפשרויות' button. Never infer from type/has_options/variations — the theme overrides only add_to_cart.text."
+    },
+    "options_url": {
+      "type": "string",
+      "description": "URL of the product page where WooCommerce renders the option chooser (= add_to_cart.url from Store API). Only meaningful when requires_options is true."
+    },
+    "price_display": {
+      "type": "string",
+      "description": "Authoritative price HTML string for display. ALWAYS use this, never prices.price (which is price-per-gram for weighted products and will show ₪0.19 instead of ₪37.80). Equals price_html from Store API."
+    },
+    "weight_display": {
+      "type": "string",
+      "description": "Human-readable weight label, e.g. '200 גרם'. Optional."
+    },
+    "price_per_unit": {
+      "type": "string",
+      "description": "Human-readable unit price, e.g. '₪18.90 / 100 גרם'. Optional, only for weighted products."
+    },
+    "substitutes": {
+      "type": "array",
+      "description": "AI-suggested substitutes when intent_type is substitute_request.",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "reason", "differences"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "reason": { "type": "string", "description": "Why this is a good substitute." },
+          "differences": { "type": "string", "description": "Key differences from the original." }
+        }
+      }
+    },
     "ai_rank": {
       "type": "integer",
       "minimum": 1,
