@@ -1,22 +1,22 @@
 # V3 Architecture — AI-First Flow, API Contract, Function-Calling Surface, Latency Budget
 
 **Author**: Lead-SmartSearchArchitect  
-**Date**: 2026-11-18  
+**Date**: 2026-11-18 | **R2 patch**: 2026-11-18  
 **Status**: PUBLISHED — other lanes build against this today  
-**Branch**: `feat/v3-planning`
+**Branch**: `feat/v3-arch-r2` (R2 patch over `feat/v3-planning`)
 
 ---
 
 ## 0. Source authority and gaps
 
 This document is derived from:
-- Task brief (quotes V3 §1 flow verbatim, §18 target query)
-- PM plan `docs/PLAN-V3.md` (references §4.3, §12, §18)
+- **`docs/SPEC-V3-FULL.md`** (4,274 lines) — the authority. Now on disk on this branch. Use `docs/SPEC-INDEX.md` to navigate.
+- PM plan `docs/PLAN-V3.md`
 - Existing plugin v0.1.1 (`includes/class-asc-*.php`, `build/index.js`)
 
-**`docs/SPEC-V3-FULL.md` does not exist on disk.** Items that cannot be resolved from the above sources are marked `[SPEC PENDING]`. Treat those as provisional. When the spec lands, reconcile against this document and update it — do not silently deviate.
+Round-1 `[SPEC PENDING]` items are resolved in §12 (R2 gap analysis). Items still awaiting CEO input are listed in §10.
 
-Intentional deviations from spec are listed in §10.
+Intentional deviations from spec are listed in §11.
 
 ---
 
@@ -671,23 +671,49 @@ Add these stub responses to your Cloud Run service immediately (return them when
 }
 ```
 
-**`POST /search` (ranked) stub**:
+**`POST /ai/search` stub** (unified `SearchResult`):
 ```json
 {
-  "products": [
+  "request_id": "req-stub",
+  "source": "cloud_ai",
+  "ai_message": "מצאתי עוף טרי שמתאים לשבת.",
+  "product_groups": [
     {
-      "id": 1001, "name": "חזה עוף טרי",
-      "permalink": "/product/chicken-breast/",
-      "image": "https://via.placeholder.com/300x300",
-      "price_html": "<span>₪29.90</span>",
-      "in_stock": true, "stock_status": "instock",
-      "type": "simple", "is_weighted": true,
-      "price_note": "המחיר הסופי לפי משקל בעת הרכישה",
-      "add_to_cart_url": "/wp-json/wc/store/v1/cart/add-item",
-      "ai_rank": 1, "ai_reason": "best match for occasion",
-      "inferred_attrs": [], "suggest_qty": null
+      "label": "עוף לשבת",
+      "products": [
+        {
+          "id": 1001, "name": "חזה עוף טרי",
+          "permalink": "/product/chicken-breast/",
+          "image": "https://via.placeholder.com/300x300",
+          "price_html": "<span>₪29.90</span>",
+          "in_stock": true, "stock_status": "instock",
+          "type": "simple", "is_weighted": true,
+          "price_note": "המחיר הסופי לפי משקל",
+          "add_to_cart_url": "/wp-json/wc/store/v1/cart/add-item",
+          "ai_rank": 1, "ai_reason": "best match for occasion",
+          "inferred_attrs": [], "suggest_qty": null
+        }
+      ],
+      "total": 1, "pages": 1
     }
   ],
+  "substitute_groups": [],
+  "promotions": [],
+  "followup_actions": [
+    { "label": "רק מוצרים במבצע", "intent_hint": "on_sale_only" },
+    { "label": "מצא לי תחליפים", "intent_hint": "find_substitutes" },
+    { "label": "הוסף מוצרים משלימים", "intent_hint": "add_complements" }
+  ],
+  "suggested_navigation": null,
+  "pending_cart_actions": [],
+  "latency_ms": 450
+}
+```
+
+Also keep `POST /search` (ranked) legacy stub for the two-track path:
+```json
+{
+  "products": [ { "id": 1001, "name": "חזה עוף טרי", "ai_rank": 1 } ],
   "total": 1, "pages": 1,
   "source": "cloud_ranked",
   "intent_id": "stub-abc123",
@@ -756,18 +782,17 @@ Build ingredient expansion logic behind this interface from day 1.
 
 ---
 
-## 10. Spec-Pending Items
+## 10. Open Items — Genuinely Still Need CEO Input
 
-| Item | Spec ref | Status |
+The following were `[SPEC PENDING]` in R1. §16 and §17 are resolved. What remains:
+
+| Item | Why CEO | Notes |
 |---|---|---|
-| §16 acceptance test suite | V3 §16 | SPEC file missing |
-| §17 twelve required changes | V3 §17 | SPEC file missing |
-| Exact Gemini model variant (Pro vs Flash) | V3 §12 | SPEC pending |
-| Cloud Run service name + GCP project ID | — | CEO to provide |
-| pgvector hosting (Cloud SQL vs standalone Postgres) | — | CEO to provide |
-| Gemini API budget ceiling (cost per search) | — | CEO to provide |
-| Hebrew tokenizer (pg_trgm vs custom dictionary) | — | Cloud lane to decide, architect to approve |
-| `cloud_tenant_id` scope (per-installation vs per-site) | V3 §12 | SPEC pending |
+| Exact Gemini model variant (Pro vs Flash) | Cost vs quality tradeoff; CEO decides budget | Cloud lane should default to Flash-002 until CEO sets the ceiling |
+| Cloud Run service name + GCP project ID | Infrastructure provisioning; CEO owns GCP billing | Cloud lane has stubbed this as `ASC_CLOUD_PROJECT_ID` env var |
+| pgvector hosting (Cloud SQL vs standalone Postgres) | Different billing, latency, ops burden | Cloud lane can default to Cloud SQL; CEO confirms |
+| Gemini API budget ceiling (₪ per 1,000 searches) | CEO decides acceptable spend-per-search | Cloud lane implements token limits; CEO sets the envelope |
+| Hebrew tokenizer (pg_trgm vs custom dictionary) | Affects recall quality; Cloud lane experiments, architect approves | `pg_trgm` is safe default; custom dictionary lifts recall ~15% but requires maintenance |
 
 ---
 
@@ -775,10 +800,34 @@ Build ingredient expansion logic behind this interface from day 1.
 
 | Deviation | Reason |
 |---|---|
-| `ContextFrame` stored in `sessionStorage` (not spec-specified) | Multi-turn context must survive a tab refresh but must not persist across browser sessions. `localStorage` would leak context between unrelated sessions. |
-| 4000ms client-side Track B abandon timeout (spec target is ≤3000ms P95) | The 3s target is a P95 latency goal, not a client-side safety net. 4s timeout ensures the user is never left in `GEMINI_PENDING` indefinitely on bad network. The P95 target still stands. |
-| `ai_reason` suppressed from shopper UI | Shopper-facing display of AI reasoning is a dark pattern that erodes trust when reasoning is imperfect. Available in developer mode only. |
-| Single-word query Gemini skip | Cost optimisation. A one-word query has minimal ambiguity that Gemini resolves better than the index — the latency cost is not justified. This is a deviation from "Gemini is always primary" and must be revisited if V3 §17 contradicts it. |
+| `ContextFrame` stored in `sessionStorage` (not spec-specified) | Multi-turn context must survive a tab refresh but must not persist across browser sessions. `localStorage` leaks context between unrelated sessions. |
+| 4000ms client-side Track B abandon timeout (spec target is ≤3000ms P95) | 3s is a P95 goal, not a client-side safety net. 4s ensures the user is never left in `GEMINI_PENDING` indefinitely on a bad network. P95 target still stands. |
+| `ai_reason` (debug) ≠ `ai_message` (shopper-visible) | R1 had `ai_reason` as debug-only. Spec §17 item 9 requires a shopper-visible AI message. R2 adds `ai_message` to `SearchResult` — it is shopper-visible. `ai_reason` on `RankedProduct` remains debug-only. |
+| Single-word query Gemini skip | Cost optimisation. One-word queries have minimal ambiguity. This deviates from "Gemini is always primary" — if the pilot data shows single-word recall is worse than natural-language, remove this exception. |
+| `/ai/search` unified endpoint added alongside two-track | Spec §12 specifies the unified endpoint. The two-track (`/intent` + `/search`) is a client-side latency optimisation kept for the browser drawer. Both surfaces remain. |
+
+---
+
+## 12. R2 Gap Analysis — What §17 Round-1 Got Wrong
+
+Round-1 built against the brief alone (spec was not on disk). Here is each §17 item, what R1 had, and what R2 corrects.
+
+| §17 item | R1 status | R2 correction |
+|---|---|---|
+| 1. Gemini to primary intent layer | ✓ Two-track enforces this | Confirmed correct. |
+| 2. Replace keyword-only flow with AI-First | ✓ Two-track Track B | Confirmed correct. |
+| 3. Keep index as fast retrieval | ✓ Track A provisional path | Confirmed correct. |
+| 4. Add microphone | ✓ Delegated to Voice lane | Confirmed: `/ai/voice` endpoint now defined. |
+| 5. Connect Cloud STT / Gemini Audio | ✓ Delegated to Voice lane | Confirmed: endpoint contract now on disk. |
+| 6. Free speech + context between recordings | ✓ ContextFrame covers this | Confirmed. `/ai/turn` now explicitly defined. |
+| 7. Placeholder invites free-form requests | ✓ Delegated to UX lane | Confirmed correct. |
+| 8. AI indicator while decoding | ✓ `GEMINI_PENDING` state | Confirmed correct. |
+| 9. Short, meaningful AI responses beside products | **WRONG.** R1 set `ai_reason` debug-only. | **CORRECTED.** `SearchResult.ai_message` is shopper-visible. Required when `source: cloud_ai`. |
+| 10. Context-aware follow-up options | **MISSED.** R1 SearchResponse had no `followup_actions`. | **ADDED.** `SearchResult.followup_actions[]` — up to 5 context-derived buttons. Each routes to `/ai/turn`. |
+| 11. Genuine connection: Gemini ↔ substitutes, promotions, cart | **PARTIAL.** Substitutes and promotions were described but absent from SearchResponse. `request_cart_action` was wrongly prohibited. | **CORRECTED.** `SearchResult.substitute_groups` and `promotions` added. `request_cart_action` moved to permitted tools (prepares, never executes; requires browser confirmation). |
+| 12. Debugger screen | **PARTIAL.** `/debug/:trace_id` endpoint existed but debug event journal format was undefined. | **ADDED.** `debug-event.schema.json` — formal journal schema required by §16 Test 7. All Cloud Run implementations must emit these events. |
+
+**Summary**: 8 items were correct, 1 was wrong (§17.9), 1 was missed (§17.10), 1 was partial (§17.11), 1 was partial (§17.12). All four are corrected in this R2 patch.
 
 ---
 

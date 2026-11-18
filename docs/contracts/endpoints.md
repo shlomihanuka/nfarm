@@ -246,6 +246,94 @@ Returns the full debug trace for a prior search, including Gemini's tool calls a
 
 ---
 
+## R2 — Unified endpoints per SPEC-V3-FULL.md §12
+
+The two-track flow (`/intent` + `/search`) remains the browser's performance path. The endpoints below are the **spec-compliant unified interface** for integrations, voice, and multi-turn. They return a `SearchResult` (see `search-result.schema.json`).
+
+---
+
+## POST /ai/search
+
+Full AI search in one call. Gemini decodes intent, invokes tools, ranks products, and returns `SearchResult` including `ai_message`, `product_groups`, `substitute_groups`, `promotions`, `followup_actions`, and `suggested_navigation`.
+
+**Request**
+```json
+{
+  "tenant_id":            "nfarm",
+  "session_id":           "uuid-v4",
+  "raw_user_input":       "אני רוצה להכין ארוחה נחמדה למשפחה, משהו לא מסובך, רצוי שיהיה במבצע, ואנחנו חמישה אנשים",
+  "input_type":           "text",
+  "locale":               "he-IL",
+  "conversation_context": null,
+  "cart_summary":         { "item_count": 0, "total": 0 },
+  "request_id":           "req_uuid"
+}
+```
+
+**Response 200** — `SearchResult` (see `search-result.schema.json`)
+
+**Response 503**
+```json
+{ "code": "asc_gemini_unavailable", "source": "fallback_local", "product_groups": [] }
+```
+When Gemini is unavailable, the response has `source: "fallback_local"` and product groups from the keyword index — the UI must display the fallback indicator. The store continues to sell; the response is never an error.
+
+---
+
+## POST /ai/voice
+
+Accepts a voice recording and processes it through the same AI pipeline as `/ai/search`. Internally transcribes (via Cloud Speech-to-Text or Gemini Audio Understanding) and then calls the intent flow.
+
+**Request** — multipart/form-data
+```
+audio_data:   <base64-encoded audio>
+mime_type:    audio/webm;codecs=opus
+session_id:   uuid-v4
+locale:       he-IL
+```
+
+**Response 200** — `SearchResult` with added fields `transcript` and `transcript_confidence`.
+
+**Response 503**
+```json
+{ "code": "asc_stt_unavailable", "message": "Speech recognition unavailable — please type your request" }
+```
+
+Voice failure must NEVER discard the session context. If STT fails, the response tells the client to invite the user to type.
+
+---
+
+## POST /ai/turn
+
+Continue a multi-turn conversation. The user's new input may reference previous results explicitly ("יותר זול") or implicitly. The server loads the conversation context and runs the full AI pipeline with accumulated context. The raw string is never searched literally.
+
+**Request**
+```json
+{
+  "tenant_id":            "nfarm",
+  "session_id":           "uuid-v4",
+  "raw_user_input":       "לא, תראה משהו קצת יותר זול",
+  "input_type":           "text",
+  "conversation_context": {
+    "session_id": "uuid-v4",
+    "turns": [
+      { "q": "גבינות לאירוח", "intent_id": "sha256-...", "timestamp_ms": 1234567890 }
+    ],
+    "accumulated_filters": { "occasion": "אירוח" }
+  },
+  "request_id": "req_uuid2"
+}
+```
+
+**Response 200** — `SearchResult`
+
+**Response 400**
+```json
+{ "code": "asc_missing_context", "message": "session_id and conversation_context required for /ai/turn" }
+```
+
+---
+
 ## pgvector schema
 
 ```sql

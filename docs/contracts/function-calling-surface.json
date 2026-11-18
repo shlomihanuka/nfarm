@@ -2,11 +2,12 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "function-calling-surface",
   "title": "Gemini Function-Calling Surface — V3",
-  "description": "Exhaustive enumeration of tools Gemini may invoke. The Cloud Run server validates every tool call before execution. No free SQL, no price mutation, no order changes, no model-invented URLs.",
+  "description": "Exhaustive enumeration of tools Gemini may invoke during a search session. All tool calls are executed by the Cloud Run server — Gemini never touches WooCommerce APIs, the database, or the cart directly. No free SQL, no price mutation, no cart changes without user confirmation. Source authority: SPEC-V3-FULL.md §12.",
+  "version": "3.1.0",
   "tools": [
     {
-      "name": "search_catalog",
-      "description": "Search the product catalog by keywords and structured filters. Returns raw product records for ranking. Never invent product IDs — only use IDs returned by this tool.",
+      "name": "search_products",
+      "description": "Search the product catalog by keywords and structured filters. Returns raw product records for Gemini to rank and evaluate. Never invent product IDs — use only IDs this tool returns.",
       "parameters": {
         "type": "object",
         "required": ["keywords"],
@@ -14,7 +15,7 @@
           "keywords": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Plain-text search terms."
+            "description": "Plain-text search terms derived from the interpreted intent. These are the words the index searches — Gemini must derive them, not pass the raw user string."
           },
           "filters": {
             "type": "object",
@@ -29,14 +30,18 @@
               },
               "max_price":    { "type": ["number", "null"] },
               "min_price":    { "type": ["number", "null"] },
-              "dietary":      { "type": "array", "items": { "type": "string" } }
+              "dietary":      {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Dietary constraints e.g. kosher, vegan, gluten-free. Advisory — server maps to real attribute filters."
+              }
             }
           },
           "limit": {
             "type": "integer",
             "minimum": 1,
             "maximum": 48,
-            "description": "Number of results to return. Server caps at 48 regardless."
+            "description": "Number of results. Server caps at 48 regardless."
           }
         }
       },
@@ -45,30 +50,329 @@
         "category_ids verified against tenant taxonomy — unknown IDs return empty set, not error",
         "unknown filter keys stripped before execution",
         "empty keywords array returns top-selling products (not an error)"
-      ]
+      ],
+      "spec_ref": "§12"
     },
     {
-      "name": "get_product",
-      "description": "Get full structured details of a specific product. Only use product IDs previously returned by search_catalog — never invent IDs.",
+      "name": "get_product_details",
+      "description": "Get full structured details of a specific product — ingredients, allergens, weight, variants. Use only product IDs previously returned by search_products. Never invent IDs.",
       "parameters": {
         "type": "object",
         "required": ["product_id"],
         "properties": {
           "product_id": {
             "type": "integer",
-            "description": "WooCommerce product ID. Must have been returned by search_catalog in this session."
+            "description": "WooCommerce product ID. Must have been returned by search_products in this session."
           }
         }
       },
       "server_validation": [
         "product_id must exist in tenant's catalog",
         "invisible/draft/deleted products return 404 — model must handle gracefully",
-        "model may not call get_product on IDs it invented"
-      ]
+        "model may not call get_product_details on IDs it invented",
+        "inferred allergen and origin fields carry review_required: true — never present as confirmed"
+      ],
+      "spec_ref": "§12"
+    },
+    {
+      "name": "get_live_product_state",
+      "description": "Get the real-time price and stock status of a product from WooCommerce. Use when you need to verify current price or stock before recommending the product, especially after get_product_details showed stale cache data.",
+      "parameters": {
+        "type": "object",
+        "required": ["product_id"],
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "description": "WooCommerce product ID. Must have been returned by search_products."
+          }
+        }
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "product_id":    { "type": "integer" },
+          "price":         { "type": "number" },
+          "regular_price": { "type": "number" },
+          "sale_price":    { "type": ["number", "null"] },
+          "on_sale":       { "type": "boolean" },
+          "in_stock":      { "type": "boolean" },
+          "stock_status":  { "type": "string", "enum": ["instock", "outofstock", "onbackorder"] },
+          "stock_qty":     { "type": ["integer", "null"] }
+        }
+      },
+      "server_validation": [
+        "calls WooCommerce REST API — not a cache hit",
+        "product_id must exist in tenant's catalog",
+        "result is never cached (always live)"
+      ],
+      "spec_ref": "§12"
+    },
+    {
+      "name": "find_substitutes",
+      "description": "Find substitute products for a product that is out of stock, too expensive, or not preferred by the user. Returns substitute products with a brief explanation of the difference.",
+      "parameters": {
+        "type": "object",
+        "required": ["product_id"],
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "description": "The product to find substitutes for. Must have been returned by search_products."
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["out_of_stock", "price", "preference", "dietary"],
+            "description": "Why the user wants a substitute. Guides the similarity search."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        }
+      },
+      "server_validation": [
+        "product_id must exist in tenant catalog",
+        "results come from the precomputed substitute graph — never invented",
+        "allergen safety substitutions must carry review_required: true",
+        "complementary products must NOT appear in substitute results"
+      ],
+      "spec_ref": "§7, §12"
+    },
+    {
+      "name": "find_complementary_products",
+      "description": "Find products that complement a given product (e.g. cheese to accompany a wine, sauce for pasta). Do not use for substitutes.",
+      "parameters": {
+        "type": "object",
+        "required": ["product_id"],
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "description": "The product to find complements for. Must have been returned by search_products."
+          },
+          "context": {
+            "type": "string",
+            "description": "Optional context for the complement search e.g. 'hosting', 'weekday dinner'."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        }
+      },
+      "server_validation": [
+        "product_id must exist in tenant catalog",
+        "results from precomputed complement graph — never invented",
+        "substitutes must NOT appear in complementary results"
+      ],
+      "spec_ref": "§7, §12"
+    },
+    {
+      "name": "get_active_promotions",
+      "description": "Get currently active promotions — sale events, bundle discounts, coupon campaigns. Use this to surface relevant deals after establishing product relevance. Never surface promotions before confirming the product is relevant.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "product_ids": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "If provided, return only promotions applicable to these products. Must be IDs from search_products."
+          },
+          "category_ids": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "If provided, return category-level promotions."
+          }
+        }
+      },
+      "returns": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "promotion_id":  { "type": "string" },
+            "type":          { "type": "string", "enum": ["sale", "bundle", "coupon", "bogo"] },
+            "label":         { "type": "string", "description": "Short human-readable label e.g. '20% off chicken this week'" },
+            "product_ids":   { "type": "array", "items": { "type": "integer" } },
+            "discount_pct":  { "type": ["number", "null"] },
+            "expires_at":    { "type": ["string", "null"] }
+          }
+        }
+      },
+      "server_validation": [
+        "result scoped to tenant_id only",
+        "expired promotions are never returned",
+        "prices in promotions are informational — final price comes from WooCommerce Store API at checkout"
+      ],
+      "spec_ref": "§12"
+    },
+    {
+      "name": "compose_shopping_bundle",
+      "description": "Group a set of products into a coherent shopping bundle for a stated occasion or meal plan. Returns a structured bundle the UI can render as a 'complete the basket' suggestion.",
+      "parameters": {
+        "type": "object",
+        "required": ["product_ids", "occasion"],
+        "properties": {
+          "product_ids": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "Product IDs to include. Must be IDs from search_products."
+          },
+          "occasion": {
+            "type": "string",
+            "description": "The occasion or meal context e.g. 'shabbat dinner', 'cheese board for 4'."
+          },
+          "servings": {
+            "type": ["integer", "null"],
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "bundle_label":   { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product_id":    { "type": "integer" },
+                "suggest_qty":   { "type": "integer" },
+                "role_in_meal":  { "type": "string", "description": "e.g. 'main', 'side', 'condiment'" }
+              }
+            }
+          },
+          "estimated_total": { "type": ["number", "null"], "description": "Informational only — not binding." }
+        }
+      },
+      "server_validation": [
+        "all product_ids must have been returned by search_products in this session",
+        "suggest_qty is advisory — never passed to cart without user confirmation",
+        "estimated_total is informational — final price from WooCommerce at checkout"
+      ],
+      "spec_ref": "§12"
+    },
+    {
+      "name": "search_store_knowledge",
+      "description": "Search the store's knowledge base — FAQs, product policies, delivery information, kashrut certificates, allergen guides. Use for informational requests that do not require a product search.",
+      "parameters": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural-language search query against the knowledge base."
+          },
+          "topic": {
+            "type": "string",
+            "enum": ["delivery", "returns", "allergens", "kashrut", "general"],
+            "description": "Optional topic hint to narrow the search."
+          }
+        }
+      },
+      "returns": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title":    { "type": "string" },
+            "excerpt":  { "type": "string", "description": "Max 300 chars" },
+            "url":      { "type": "string", "description": "Store-relative URL — never invented, always from knowledge base index" }
+          }
+        }
+      },
+      "server_validation": [
+        "URLs are served from the tenant's own knowledge index — no external URLs",
+        "result is never fabricated — only stored knowledge is returned",
+        "empty result is a valid response (not an error)"
+      ],
+      "spec_ref": "§12"
+    },
+    {
+      "name": "request_navigation",
+      "description": "Signal that the user should be navigated to a specific store section or category page. This does NOT navigate the user — it returns a navigation instruction the browser UI executes.",
+      "parameters": {
+        "type": "object",
+        "required": ["destination_type"],
+        "properties": {
+          "destination_type": {
+            "type": "string",
+            "enum": ["category", "product", "search_page", "promotions_page"],
+            "description": "Type of destination."
+          },
+          "category_id": {
+            "type": ["integer", "null"],
+            "description": "Required when destination_type is 'category'. Must be a valid category_id from list_categories."
+          },
+          "product_id": {
+            "type": ["integer", "null"],
+            "description": "Required when destination_type is 'product'. Must be from search_products."
+          },
+          "label": {
+            "type": "string",
+            "description": "Human-readable label for the navigation action e.g. 'View all cheeses'."
+          }
+        }
+      },
+      "server_validation": [
+        "category_id verified against tenant taxonomy — invalid ID returns error",
+        "product_id verified against tenant catalog",
+        "destination URL constructed server-side — model never constructs URLs"
+      ],
+      "spec_ref": "§12"
+    },
+    {
+      "name": "request_cart_action",
+      "description": "Prepare a structured cart-add instruction for the browser to execute — after user confirmation. The model never adds to the cart directly. This tool returns a pending action that the browser presents as 'Add to basket?' and executes only on explicit user approval.",
+      "parameters": {
+        "type": "object",
+        "required": ["product_id", "quantity"],
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "description": "WooCommerce product ID. Must have been returned by search_products in this session."
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0.001,
+            "description": "Quantity to add. Advisory — user adjusts before confirming."
+          },
+          "variation_id": {
+            "type": ["integer", "null"],
+            "description": "Required for variable products. Must come from get_product_details."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Short human-readable reason why the model recommends this addition e.g. 'best match for your occasion'. Shown to user alongside the confirmation prompt. ≤80 chars."
+          }
+        }
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "pending_action_id": { "type": "string", "description": "Opaque ID the browser uses to identify the pending action." },
+          "product_id":        { "type": "integer" },
+          "quantity":          { "type": "number" },
+          "variation_id":      { "type": ["integer", "null"] },
+          "product_name":      { "type": "string" },
+          "price_html":        { "type": "string" },
+          "confirmation_required": { "type": "boolean", "const": true }
+        }
+      },
+      "server_validation": [
+        "product_id must exist in tenant's catalog",
+        "variation_id validated against product variants if provided",
+        "confirmation_required is always true — model must never bypass this",
+        "browser executes POST /wp-json/wc/store/v1/cart/add-item only after user confirms",
+        "this tool PREPARES the action — it does not execute it"
+      ],
+      "spec_ref": "§12"
     },
     {
       "name": "decompose_recipe",
-      "description": "Decompose a dish or meal name into ingredient search keywords. Returns keyword strings only — not prices, stock, or availability. Never assert allergen or origin status in this response.",
+      "description": "Decompose a dish or meal name into ingredient search keywords. Returns keyword strings only — not prices, stock, or availability. Never assert allergen or origin status.",
       "parameters": {
         "type": "object",
         "required": ["dish_name"],
@@ -86,38 +390,14 @@
         }
       },
       "server_validation": [
-        "result feeds into search_catalog keywords — it is a string array, not a product list",
+        "result feeds into search_products keywords — it is a string array, not a product list",
         "allergen and origin must NOT be asserted in this response",
         "result is cached by dish_name + locale for 24h"
       ]
     },
     {
-      "name": "extract_filters",
-      "description": "Parse natural-language constraints into structured search filters (price range, occasion, dietary requirements, etc.).",
-      "parameters": {
-        "type": "object",
-        "required": ["text"],
-        "properties": {
-          "text": {
-            "type": "string",
-            "description": "The natural-language constraint text to parse."
-          },
-          "locale": {
-            "type": "string",
-            "enum": ["he-IL", "en-US", "ar-IL", "ru-IL"],
-            "default": "he-IL"
-          }
-        }
-      },
-      "server_validation": [
-        "returns a partial filters object; unknown keys stripped",
-        "locale must be in allowed list — others default to he-IL",
-        "price values are advisory and must be validated against actual WC price range"
-      ]
-    },
-    {
       "name": "list_categories",
-      "description": "Return the tenant's available product categories. Use this to discover valid category_ids before calling search_catalog with category filters. Never invent category IDs.",
+      "description": "Return the tenant's available product categories. Use this to discover valid category_ids before calling search_products with category filters. Never invent category IDs.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -134,13 +414,29 @@
       ]
     }
   ],
+  "server_orchestration": {
+    "description": "These are operations the Cloud Run server performs on Gemini's behalf — NOT tools Gemini calls. They are listed here for completeness. Any code that exposes them as Gemini-callable tools is a critical defect.",
+    "operations": [
+      {
+        "name": "interpret_user_intent",
+        "description": "Server calls Gemini with the user's raw input and system prompt to produce an IntentResult. This IS Gemini's core reasoning step — not a tool it calls on itself.",
+        "spec_ref": "§12"
+      },
+      {
+        "name": "build_search_plan",
+        "description": "Server constructs a SearchPlan from the IntentResult and sends it to the retrieval layer. Internal artifact — never sent to the browser or to Gemini as a tool response.",
+        "spec_ref": "§12"
+      }
+    ]
+  },
   "prohibited_tools": {
     "description": "The following must NEVER appear in the function-calling surface. Any code review finding one of these in Gemini's available tools must be treated as a critical security defect.",
     "entries": [
-      { "name": "add_to_cart",        "reason": "Commerce is WC Store API domain — model must not trigger cart changes" },
+      { "name": "add_to_cart",        "reason": "Commerce is WC Store API domain — model must not trigger cart changes directly. Use request_cart_action (which requires user confirmation) instead." },
       { "name": "update_price",        "reason": "Price is set by WooCommerce; AI has no write access" },
       { "name": "create_order",        "reason": "Never" },
       { "name": "modify_order",        "reason": "Never" },
+      { "name": "delete_order",        "reason": "Never" },
       { "name": "get_user_data",       "reason": "PII; model has no user identity context" },
       { "name": "get_user_history",    "reason": "PII" },
       { "name": "run_sql",             "reason": "No free database access" },
@@ -150,7 +446,8 @@
       { "name": "set_stock",           "reason": "Inventory is WC-owned" },
       { "name": "update_inventory",    "reason": "Inventory is WC-owned" },
       { "name": "send_notification",   "reason": "No model-triggered push/email" },
-      { "name": "apply_coupon",        "reason": "Pricing is WC domain" }
+      { "name": "apply_coupon",        "reason": "Pricing is WC domain" },
+      { "name": "modify_product",      "reason": "Catalog is WC-owned; AI is read-only" }
     ]
   }
 }

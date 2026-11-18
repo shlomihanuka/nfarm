@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "debug-event",
+  "title": "DebugEvent",
+  "description": "One entry in the event journal stored server-side for every search request. Used by the Debugger screen (§17 item 12) and required by §16 Test 7 to prove full AI involvement: Gemini received the request, intent was produced, search plan was built, products were selected per plan, and the result matches the intent.",
+  "type": "object",
+  "required": ["trace_id", "event_type", "timestamp_ms", "tenant_id"],
+  "additionalProperties": false,
+  "properties": {
+    "trace_id": {
+      "type": "string",
+      "description": "Shared with the response X-Trace-Id header and SearchResult.processing_metadata.trace_id."
+    },
+    "tenant_id": { "type": "string" },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "request_received",
+        "cache_hit",
+        "gemini_called",
+        "gemini_responded",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_failed",
+        "search_plan_built",
+        "retrieval_started",
+        "retrieval_completed",
+        "ranking_completed",
+        "response_sent",
+        "fallback_activated",
+        "error"
+      ],
+      "description": "§16 Test 7 requires that for every AI search, the journal contains: gemini_called, gemini_responded, search_plan_built, retrieval_completed, response_sent — in that order. A search journal missing any of these events does NOT prove AI involvement."
+    },
+    "timestamp_ms": {
+      "type": "integer",
+      "description": "Unix epoch milliseconds."
+    },
+    "data": {
+      "type": "object",
+      "description": "Event-specific payload. Schema varies by event_type.",
+      "additionalProperties": true,
+      "properties": {
+        "query_original":    { "type": "string" },
+        "intent_type":       { "type": "string" },
+        "confidence":        { "type": "number" },
+        "tool_name":         { "type": "string" },
+        "tool_input":        { "type": "object" },
+        "tool_output_count": { "type": "integer", "description": "Number of items returned by the tool (not the full output — no PII in event log)." },
+        "retrieval_strategy":{ "type": "string" },
+        "results_count":     { "type": "integer" },
+        "ranked_count":      { "type": "integer" },
+        "source":            { "type": "string" },
+        "fallback_reason":   { "type": "string" },
+        "latency_ms":        { "type": "integer" },
+        "error_code":        { "type": "string" },
+        "error_message":     { "type": "string" },
+        "input_tokens":      { "type": "integer" },
+        "output_tokens":     { "type": "integer" }
+      }
+    }
+  },
+  "examples": [
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "request_received",   "timestamp_ms": 1000, "data": { "query_original": "אני רוצה גבינות לאירוח" } },
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "gemini_called",       "timestamp_ms": 1010, "data": { "input_tokens": 312 } },
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "gemini_responded",    "timestamp_ms": 1850, "data": { "intent_type": "occasion_shopping", "confidence": 0.91, "output_tokens": 128, "latency_ms": 840 } },
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "tool_call_started",   "timestamp_ms": 1855, "data": { "tool_name": "list_categories" } },
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "tool_call_completed", "timestamp_ms": 1870, "data": { "tool_name": "list_categories", "tool_output_count": 12, "latency_ms": 15 } },
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "tool_call_started",   "timestamp_ms": 1872, "data": { "tool_name": "search_products" } },
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "tool_call_completed", "timestamp_ms": 1950, "data": { "tool_name": "search_products", "tool_output_count": 18, "latency_ms": 78 } },
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "search_plan_built",   "timestamp_ms": 1960, "data": { "retrieval_strategy": "hybrid" } },
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "retrieval_completed", "timestamp_ms": 2050, "data": { "results_count": 18 } },
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "ranking_completed",   "timestamp_ms": 2100, "data": { "ranked_count": 8 } },
+    { "trace_id": "tr_abc123", "tenant_id": "nfarm", "event_type": "response_sent",       "timestamp_ms": 2110, "data": { "source": "cloud_ai", "latency_ms": 1110 } }
+  ]
+}

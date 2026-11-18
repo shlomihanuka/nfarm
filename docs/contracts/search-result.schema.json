@@ -1,0 +1,179 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "search-result",
+  "title": "SearchResult",
+  "description": "Full response returned by Cloud Run POST /ai/search and POST /ai/turn. This is the unified response type the spec defines in §12. The browser drawer renders all groups from a single response object. Never return free text or product HTML — all human-visible text is in ai_message and product card fields only.",
+  "type": "object",
+  "required": ["request_id", "intent", "source", "product_groups", "latency_ms"],
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "description": "Echoed from the request. Enables client-side deduplication."
+    },
+    "intent": {
+      "$ref": "intent-result",
+      "description": "Gemini's parsed intent. null only when source is 'fallback_local' and Gemini was unreachable."
+    },
+    "source": {
+      "type": "string",
+      "enum": ["cloud_ai", "cloud_provisional", "fallback_local", "fallback_wc", "disabled"],
+      "description": "cloud_ai = full Gemini path; cloud_provisional = fast index, no Gemini; fallback_local = pgvector/WC without Cloud Run; fallback_wc = native WordPress WP_Query; disabled = plugin off. The UI must display the fallback indicator when source is not 'cloud_ai'."
+    },
+    "ai_message": {
+      "type": ["string", "null"],
+      "maxLength": 300,
+      "description": "Short, shopper-visible message from Gemini about what it understood and found. e.g. 'מצאתי גבינות שמתאימות לאירוח, כולל אפשרויות במחיר נוח.' Required when source is cloud_ai. null for all other sources. Plain text only — no HTML or Markdown."
+    },
+    "product_groups": {
+      "type": "array",
+      "description": "Ordered product groups. Each group has a label and a list of products. For simple queries there is usually one group. For recipe/occasion queries the server may return multiple groups (main, sides, condiments).",
+      "items": {
+        "type": "object",
+        "required": ["label", "products"],
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Short group label shown to the shopper. e.g. 'עיקריות', 'תוספות', 'מבצע השבוע'. Max 50 chars."
+          },
+          "group_note": {
+            "type": ["string", "null"],
+            "maxLength": 150,
+            "description": "Optional short note about this group e.g. 'אלה יכולים להתאים יחד'. Plain text only."
+          },
+          "products": {
+            "type": "array",
+            "items": { "$ref": "ranked-product" },
+            "minItems": 0,
+            "maxItems": 48
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total matching products in this group (may exceed products array length if paginated)."
+          },
+          "pages": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "substitute_groups": {
+      "type": "array",
+      "description": "Substitute product groups. Present only when a primary product is out of stock or when the user requests alternatives. Each substitute group links back to the product it substitutes.",
+      "items": {
+        "type": "object",
+        "required": ["for_product_id", "products"],
+        "additionalProperties": false,
+        "properties": {
+          "for_product_id": {
+            "type": "integer",
+            "description": "The product ID being substituted."
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["out_of_stock", "price", "preference", "dietary"]
+          },
+          "intro": {
+            "type": ["string", "null"],
+            "maxLength": 150,
+            "description": "Short intro e.g. 'המוצר הזה חסר כרגע, אבל מצאתי אפשרויות דומות.' Plain text."
+          },
+          "products": {
+            "type": "array",
+            "items": { "$ref": "ranked-product" },
+            "maxItems": 6
+          }
+        }
+      }
+    },
+    "promotions": {
+      "type": "array",
+      "description": "Active promotions relevant to the returned products. Presented to the user AFTER product relevance is established — never instead of relevant products.",
+      "items": {
+        "type": "object",
+        "required": ["promotion_id", "type", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "promotion_id":  { "type": "string" },
+          "type":          { "type": "string", "enum": ["sale", "bundle", "coupon", "bogo"] },
+          "label":         { "type": "string", "maxLength": 100, "description": "Human-readable label." },
+          "product_ids":   { "type": "array", "items": { "type": "integer" } },
+          "discount_pct":  { "type": ["number", "null"] },
+          "expires_at":    { "type": ["string", "null"], "format": "date-time" }
+        }
+      }
+    },
+    "followup_actions": {
+      "type": "array",
+      "description": "Context-aware follow-up options. Max 5. Each is a short label that becomes a /ai/turn request when tapped. Derived from the current result context — not generic. e.g. 'תראה משהו זול יותר', 'רק מוצרים במבצע', 'מצא לי תחליפים'.",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["label", "intent_hint"],
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Short Hebrew label shown as a button."
+          },
+          "intent_hint": {
+            "type": "string",
+            "enum": ["cheaper", "on_sale_only", "find_substitutes", "add_complements", "build_basket", "refine_dietary", "show_more"],
+            "description": "Machine-readable intent used by the server to route the turn request."
+          }
+        }
+      }
+    },
+    "suggested_navigation": {
+      "type": ["object", "null"],
+      "description": "If Gemini determines the user would be better served by a category page or section, this field carries the navigation instruction. The browser shows it as an optional 'Browse all X' link, never auto-navigates.",
+      "additionalProperties": false,
+      "properties": {
+        "destination_type": { "type": "string", "enum": ["category", "promotions_page", "search_page"] },
+        "category_id":      { "type": ["integer", "null"] },
+        "label":            { "type": "string", "maxLength": 60 },
+        "url":              { "type": "string", "description": "Full store-relative URL. Constructed server-side — never model-invented." }
+      }
+    },
+    "pending_cart_actions": {
+      "type": "array",
+      "description": "Cart-add instructions prepared by request_cart_action tool calls during this response. The browser must present each as a confirmation prompt before executing. Never auto-execute.",
+      "items": {
+        "type": "object",
+        "required": ["pending_action_id", "product_id", "quantity", "product_name", "price_html", "confirmation_required"],
+        "additionalProperties": false,
+        "properties": {
+          "pending_action_id":      { "type": "string" },
+          "product_id":             { "type": "integer" },
+          "quantity":               { "type": "number" },
+          "variation_id":           { "type": ["integer", "null"] },
+          "product_name":           { "type": "string" },
+          "price_html":             { "type": "string" },
+          "reason":                 { "type": ["string", "null"], "maxLength": 80 },
+          "confirmation_required":  { "type": "boolean", "const": true }
+        }
+      }
+    },
+    "processing_metadata": {
+      "type": "object",
+      "description": "Server-side timing and routing metadata. Stripped from shopper-facing responses; included in debug mode only.",
+      "additionalProperties": false,
+      "properties": {
+        "trace_id":          { "type": "string" },
+        "latency_ms_intent": { "type": "integer" },
+        "latency_ms_tools":  { "type": "integer" },
+        "latency_ms_rank":   { "type": "integer" },
+        "latency_ms_total":  { "type": "integer" },
+        "tool_calls":        { "type": "integer", "description": "Number of function-calling tool invocations during this request." },
+        "gemini_model":      { "type": "string" },
+        "cache_hit":         { "type": "boolean" }
+      }
+    },
+    "latency_ms": {
+      "type": "integer",
+      "description": "Total server-side latency in milliseconds from request received to response serialized."
+    }
+  }
+}
