@@ -37,6 +37,15 @@ class ASC_Search {
             ],
         ] );
 
+        register_rest_route( 'asc/v1', '/assistant', [
+            'methods'             => 'GET',
+            'callback'            => [ $this, 'handle_assistant' ],
+            'permission_callback' => '__return_true',
+            'args'                => [
+                'q' => [ 'type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ],
+            ],
+        ] );
+
         register_rest_route( 'asc/v1', '/product/(?P<id>\d+)', [
             'methods'             => 'GET',
             'callback'            => [ $this, 'handle_product' ],
@@ -59,15 +68,61 @@ class ASC_Search {
         $per_page = (int) $request->get_param( 'per_page' );
         $page     = (int) $request->get_param( 'page' );
 
+        // Always run local WC search (the cloud ranking layer is not yet live).
+        $local = $this->local_search( $q, $per_page, $page );
+
         // Try cloud first; fall back silently to local.
         if ( $settings->is_cloud_configured() ) {
             $cloud_result = ASC_Cloud::instance()->search( $q, $per_page, $page );
             if ( ! is_wp_error( $cloud_result ) ) {
-                return new WP_REST_Response( $cloud_result, 200 );
+                // Merge: use cloud assistant + search_plan, local WC products.
+                $response = array_merge( $local, $cloud_result );
+                // If cloud returned products of its own use those; otherwise local.
+                if ( empty( $cloud_result['products'] ) ) {
+                    $response['products'] = $local['products'];
+                }
+                // Enrich products with per-product R4 fields.
+                $response['products'] = array_map( [ $this, 'enrich_product_r4' ], $response['products'] );
+                return new WP_REST_Response( $response, 200 );
             }
         }
 
-        return new WP_REST_Response( $this->local_search( $q, $per_page, $page ), 200 );
+        // Local-only path: enrich products and return without assistant.
+        $local['products'] = array_map( [ $this, 'enrich_product_r4' ], $local['products'] );
+        return new WP_REST_Response( $local, 200 );
+    }
+
+    /**
+     * GET /wp-json/asc/v1/assistant?q=...
+     *
+     * Proxies to the cloud /assistant endpoint. Designed to be called in parallel
+     * with /search so the assistant message arrives before the product cards.
+     * Falls back gracefully when the cloud is not configured.
+     */
+    public function handle_assistant( WP_REST_Request $request ): WP_REST_Response {
+        $settings = ASC_Settings::instance();
+
+        if ( ! $settings->is_enabled() ) {
+            return new WP_REST_Response(
+                [ 'assistant' => [ 'message' => '', 'tone' => 'none', 'follow_ups' => [] ] ],
+                200
+            );
+        }
+
+        $q = trim( $request->get_param( 'q' ) );
+
+        if ( $settings->is_cloud_configured() ) {
+            $result = ASC_Cloud::instance()->assistant( $q );
+            if ( ! is_wp_error( $result ) ) {
+                return new WP_REST_Response( $result, 200 );
+            }
+        }
+
+        // No cloud: return a silent assistant response.
+        return new WP_REST_Response(
+            [ 'assistant' => [ 'message' => '', 'tone' => 'none', 'follow_ups' => [] ] ],
+            200
+        );
     }
 
     public function handle_product( WP_REST_Request $request ): WP_REST_Response {
@@ -158,7 +213,49 @@ class ASC_Search {
         // Add-to-cart endpoint (Store API).
         $data['add_to_cart_url'] = rest_url( 'wc/store/v1/cart/add-item' );
 
+        // R4: reliable "needs options modal" flag.
+        // add_to_cart_text() returns "Select options" when the theme/plugin overrides
+        // the button — this is the ONLY reliable signal; type/has_options/variations lie.
+        $cart_text = $product->add_to_cart_text();
+        $requires_options = ( 'Select options' === $cart_text || 'בחר אפשרויות' === $cart_text );
+        $data['requires_options'] = $requires_options;
+        $data['options_url']      = $requires_options ? get_permalink( $product->get_id() ) : null;
+
+        // R4: price_display = price_html (never use prices.price for weighted products).
+        $data['price_display'] = $product->get_price_html();
+
         return $data;
+    }
+
+    /**
+     * Enrich a plain product array (from cloud or local) with R4 fields.
+     * Called after WC product data is retrieved, before sending to the browser.
+     *
+     * @param array $product Plain associative product array.
+     * @return array Enriched product array.
+     */
+    private function enrich_product_r4( array $product ): array {
+        // If the product already carries requires_options from format_product, keep it.
+        // If it came from cloud (which doesn't know WC-level add_to_cart_text), re-derive it.
+        if ( ! isset( $product['requires_options'] ) && ! empty( $product['id'] ) ) {
+            $wc_product = wc_get_product( (int) $product['id'] );
+            if ( $wc_product ) {
+                $cart_text = $wc_product->add_to_cart_text();
+                $requires  = ( 'Select options' === $cart_text || 'בחר אפשרויות' === $cart_text );
+                $product['requires_options'] = $requires;
+                $product['options_url']      = $requires ? get_permalink( $wc_product->get_id() ) : null;
+                if ( empty( $product['price_display'] ) ) {
+                    $product['price_display'] = $wc_product->get_price_html();
+                }
+            }
+        }
+
+        // Ensure price_display always equals price_html.
+        if ( empty( $product['price_display'] ) ) {
+            $product['price_display'] = $product['price_html'] ?? '';
+        }
+
+        return $product;
     }
 
     private function format_attributes( WC_Product $product, array $attrs ): array {

@@ -50,6 +50,38 @@ Return a JSON object matching the response schema exactly.`;
 function mockIntentResult(q: string): IntentResult {
   const lower = q.toLowerCase();
 
+  // Question: contains "?" or interrogative markers
+  if (
+    q.includes('?') ||
+    q.includes('מה ההבדל') ||
+    q.includes('מה זה') ||
+    q.includes('האם') ||
+    (q.includes('כמה') && (q.includes('גלוטן') || q.includes('אלרגן') || q.includes('מרכיב'))) ||
+    q.includes('מכיל') ||
+    (q.includes('מה') && (q.includes('ההבדל') || q.includes('עדיף')))
+  ) {
+    return {
+      query_original: q,
+      intent_type: 'question_answering',
+      keywords: q.split(/\s+/).filter(w => w.length > 1).slice(0, 4),
+      filters: {},
+      context: { language: 'he' },
+      confidence: 0.88,
+    };
+  }
+
+  // Substitute request: "דומה", "חלופה", "במקום", "אלטרנטיבה"
+  if (q.includes('דומה') || q.includes('חלופה') || q.includes('במקום') || q.includes('אלטרנטיבה') || q.includes('תחליף')) {
+    return {
+      query_original: q,
+      intent_type: 'substitute_request',
+      keywords: q.split(/\s+/).filter(w => w.length > 1 && !['דומה','חלופה','במקום','אלטרנטיבה','תחליף'].includes(w)).slice(0, 4),
+      filters: {},
+      context: { language: 'he' },
+      confidence: 0.9,
+    };
+  }
+
   if (q.includes('ארוחה') && q.includes('משפחה') || q.includes('חמישה')) {
     return {
       query_original: q,

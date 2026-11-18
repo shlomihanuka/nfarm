@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { healthRoutes } from './routes/health.js';
 import { intentRoutes } from './routes/intent.js';
 import { searchRoutes } from './routes/search.js';
+import { assistantRoutes } from './routes/assistant.js';
 import { debugRoutes } from './routes/debug.js';
 
 const app = Fastify({
@@ -25,6 +26,7 @@ app.addHook('preHandler', async (req, reply) => {
 await app.register(healthRoutes);
 await app.register(intentRoutes);
 await app.register(searchRoutes);
+await app.register(assistantRoutes);
 await app.register(debugRoutes);
 
 try {

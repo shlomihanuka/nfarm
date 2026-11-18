@@ -407,6 +407,206 @@
   font-family: inherit;
 }
 
+/* ================================================================
+   R4 — Assistant message, options button, folded qty, modal
+   ================================================================ */
+
+/* ---- Assistant message bar ---- */
+.asc-assistant {
+  display: none;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 20px;
+  background: #f0fdf4;
+  border-bottom: 1px solid #bbf7d0;
+  flex-shrink: 0;
+  font-size: 0.88rem;
+  color: #166534;
+  line-height: 1.5;
+  font-family: inherit;
+  animation: asc-fade-in 0.25s ease;
+}
+.asc-assistant.asc-assistant-visible {
+  display: flex;
+}
+@keyframes asc-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Options button (אפשרויות — secondary style) ---- */
+.asc-options-btn {
+  width: 100%;
+  background: none;
+  border: 1px solid var(--asc-gray-200);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--asc-gray-700);
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: center;
+}
+.asc-options-btn:hover { background: var(--asc-gray-100); border-color: var(--asc-gray-400); }
+
+/* ---- Folded qty + add-to-cart button (R4) ---- */
+/* asc-add-qty-row: a single button that holds [−] label qty [+] */
+.asc-add-btn.asc-add-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 8px;
+}
+.asc-qty-side {
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.12);
+  border: none;
+  color: #fff;
+  width: 32px;
+  min-height: 36px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+  transition: background 0.12s;
+}
+.asc-qty-side:hover { background: rgba(0,0,0,0.22); }
+.asc-add-label {
+  flex: 1;
+  text-align: center;
+  padding: 7px 2px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.asc-qty-num {
+  flex-shrink: 0;
+  min-width: 20px;
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 7px 4px;
+}
+
+/* ---- Options modal ---- */
+.asc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100000;
+  display: none;
+}
+.asc-modal-overlay.asc-modal-open { display: block; }
+.asc-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  width: min(420px, 90vw);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  z-index: 100001;
+  display: none;
+  flex-direction: column;
+  direction: rtl;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+  opacity: 0;
+}
+.asc-modal.asc-modal-open {
+  display: flex;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+.asc-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--asc-gray-200);
+}
+.asc-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: var(--asc-gray-500);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.asc-modal-close:hover { background: var(--asc-gray-100); }
+.asc-modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--asc-gray-900);
+  flex: 1;
+}
+.asc-modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.asc-modal-price {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--asc-gray-900);
+}
+.asc-modal-attr-label {
+  font-size: 0.85rem;
+  color: var(--asc-gray-500);
+  font-weight: 500;
+}
+.asc-modal-attr-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--asc-gray-200);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--asc-gray-900);
+  background: #fff;
+  outline: none;
+}
+.asc-modal-attr-select:focus { border-color: var(--asc-blue); }
+.asc-modal-add-btn {
+  background: var(--asc-blue);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 4px;
+  transition: background 0.15s;
+}
+.asc-modal-add-btn:hover:not(:disabled) { background: #1d4ed8; }
+.asc-modal-add-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.asc-modal-loading {
+  color: var(--asc-gray-400);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 20px 0;
+}
+.asc-modal-link {
+  color: var(--asc-blue);
+  font-size: 0.9rem;
+  text-align: center;
+  display: block;
+  padding: 12px 0;
+}
+
 /* ---- Follow-up chips ---- */
 .asc-chips {
   display: none;
@@ -461,9 +661,12 @@
   .asc-card-image { width: 72px; height: 72px; }
   .asc-add-btn { padding: 10px 14px; font-size: 0.95rem; min-height: 44px; }
   .asc-qty-btn { min-width: 40px; min-height: 40px; }
+  .asc-qty-side { width: 40px; min-height: 44px; }
   .asc-header { padding: 12px 16px; }
   .asc-chips { padding: 10px 14px; }
   .asc-ai-bar { padding: 7px 16px; }
+  .asc-assistant { padding: 7px 16px; }
+  .asc-options-btn { min-height: 44px; font-size: 0.95rem; }
 }
 
 @media (max-width: 700px) and (min-width: 540px) {

@@ -1,8 +1,30 @@
-# Cloud Run Endpoint Signatures — V3
+# Cloud Run Endpoint Signatures — V3 (R4)
 
 All endpoints require `X-ASC-Tenant: <tenant_id>` header.
 All requests and responses are `application/json`.
 All responses include `X-Trace-Id` response header for debugger correlation.
+
+---
+
+## Transport — two-phase parallel fetch ("speak while it works")
+
+The drawer fires TWO requests in parallel on every search:
+
+```
+t=0    POST /wp-json/asc/v1/assistant?q=...  → AssistantResponse  (~200–400ms)
+t=0    GET  /wp-json/asc/v1/search?q=...     → products + assistant (~600–1200ms)
+```
+
+**Phase 1** (`/assistant`) returns a short Hebrew sentence based on intent only —
+no product data needed. The drawer renders this in the `asc-assistant` bar
+immediately, while products are still loading.
+
+**Phase 2** (`/search`) returns ranked products. The `assistant` field in the
+search response may be richer (product-aware) than phase 1; the drawer replaces
+the phase-1 message with the phase-2 message when products land.
+
+This gives the user a true AI message in ~200ms and products in ~1s — no
+skeleton / spinner silence.
 
 ---
 
@@ -18,6 +40,56 @@ No auth required. Returns 200 when the service is accepting traffic.
   "model": "gemini-1.5-flash-002"
 }
 ```
+
+---
+
+## POST /assistant
+
+Fast endpoint: intent engine + assistant message generation only.
+No product retrieval. Designed to resolve before POST /search.
+
+**Request**
+```json
+{
+  "q": "מה ההבדל בין פרמז'ן לגרנה פדנו?",
+  "tenant_id": "nfarm",
+  "context": { },
+  "products": [ ]
+}
+```
+
+`products` is optional. When provided (PHP can pass WC results here after
+local search), the assistant can answer product-specific questions.
+
+**Response** — `AssistantResponse` (see `assistant-response.schema.json`)
+```json
+{
+  "assistant": {
+    "message": "לא מצאתי מידע השוואתי בנתוני הקטלוג. ניתן לבדוק ישירות בדפי המוצרים.",
+    "tone": "answer",
+    "follow_ups": ["הצג פרמז'ן", "הצג גרנה פדנו"]
+  },
+  "intent": {
+    "query_original": "מה ההבדל בין פרמז'ן לגרנה פדנו?",
+    "intent_type": "question_answering",
+    "keywords": ["פרמז'ן", "גרנה פדנו"],
+    "filters": {},
+    "context": { "language": "he" },
+    "confidence": 0.88
+  },
+  "trace_id": "abc123",
+  "debug": {
+    "latency_ms": { "intent": 85, "assistant": 42, "total": 130 },
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "model": "mock:gemini-1.5-flash-002"
+  }
+}
+```
+
+**Error**
+- `400` — missing `q` or `tenant_id`
+- `503` — Gemini unavailable
 
 ---
 
@@ -57,7 +129,8 @@ Receives a natural-language query, calls Gemini, returns a structured `IntentRes
 
 ## POST /search
 
-Receives an `IntentResult` (or raw `q` for the provisional path), runs retrieval, returns ranked products.
+Receives an `IntentResult` (or raw `q` for the provisional path), runs retrieval,
+returns ranked products + an `assistant` message (product-aware).
 
 **Request**
 ```json
@@ -70,8 +143,8 @@ Receives an `IntentResult` (or raw `q` for the provisional path), runs retrieval
 }
 ```
 
-If `provisional: true`, `intent` is ignored — the endpoint runs keyword search only (fast path, no Gemini).
-If `intent` is omitted and `provisional` is false, the endpoint calls `POST /intent` internally and returns the full plan.
+If `provisional: true`, `intent` is ignored — keyword search only (fast path, no Gemini).
+If `intent` is omitted and `provisional` is false, the endpoint calls `POST /intent` internally.
 
 **Response**
 ```json
@@ -80,12 +153,26 @@ If `intent` is omitted and `provisional` is false, the endpoint calls `POST /int
   "total": 24,
   "pages": 2,
   "source": "cloud_v3",
+  "assistant": {
+    "message": "בחרתי עבורך מרכיבים לארוחת שבת ל-5 אנשים.",
+    "tone": "suggest",
+    "follow_ups": ["מה מתאים לצמחונים?"]
+  },
+  "follow_ups": ["מה מתאים לצמחונים?"],
   "search_plan": { },
   "trace_id": "tr_abc123"
 }
 ```
 
 `products` items conform to `ranked-product.schema.json`.
+Per-product fields added in R4: `price_display`, `requires_options`, `options_url`, `substitutes`.
+
+**Price display rule**: always use `price_display` (= `price_html`). `prices.price` from the
+Store API is price-per-gram for weighted products and will show ₪0.19 for a ₪37.80 cheese.
+
+**Options rule**: `requires_options === true` when `add_to_cart.text === "Select options"` on
+the Store API. This is the ONLY reliable discriminator — `type`, `has_options` and `variations`
+all say "simple" for weighted-option products. Render אפשרויות button + modal when true.
 
 **Error**
 - `400` — missing `tenant_id`
@@ -95,8 +182,8 @@ If `intent` is omitted and `provisional` is false, the endpoint calls `POST /int
 
 ## GET /debug/:trace_id
 
-Returns the full debug trace for a prior search, including what Gemini understood and which tools it invoked.
-Requires `X-ASC-Debug-Key` header (admin-only token, separate from tenant token).
+Returns the full debug trace for a prior search.
+Requires `X-ASC-Debug-Key` header (admin-only token).
 
 **Response**
 ```json

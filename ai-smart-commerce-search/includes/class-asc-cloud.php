@@ -94,6 +94,39 @@ class ASC_Cloud {
     }
 
     /**
+     * Call the cloud /assistant endpoint.
+     * Returns { assistant: {message, tone, follow_ups}, intent, trace_id } or WP_Error.
+     */
+    public function assistant( string $q ): array|WP_Error {
+        $url = add_query_arg( [], trailingslashit( $this->settings->get( 'cloud_api_url' ) ) . 'assistant' );
+
+        $response = wp_remote_post( $url, [
+            'timeout' => 8,
+            'headers' => array_merge( $this->auth_headers(), [ 'Content-Type' => 'application/json' ] ),
+            'body'    => wp_json_encode( [
+                'q'         => $q,
+                'tenant_id' => $this->settings->get( 'cloud_tenant_id' ),
+            ] ),
+        ] );
+
+        if ( is_wp_error( $response ) ) {
+            return $response;
+        }
+
+        $code = wp_remote_retrieve_response_code( $response );
+        if ( $code < 200 || $code >= 300 ) {
+            return new WP_Error( 'cloud_error', 'Cloud assistant failed with HTTP ' . $code );
+        }
+
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+        if ( ! is_array( $body ) ) {
+            return new WP_Error( 'cloud_parse_error', 'Invalid JSON from cloud assistant' );
+        }
+
+        return $body;
+    }
+
+    /**
      * Proxy a search query to the cloud backend.
      * Returns a normalised result array or WP_Error on failure.
      */

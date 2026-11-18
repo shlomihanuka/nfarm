@@ -102,6 +102,14 @@
   const aiText = el('span', { className: 'asc-ai-text' });
   const aiBar  = el('div',  { className: 'asc-ai-bar', role: 'status', 'aria-live': 'polite' }, aiDot, aiText);
 
+  /* ---- Assistant message bar (R4) ---- */
+  const assistantEl = el('div', {
+    className:  'asc-assistant',
+    role:       'status',
+    'aria-live': 'polite',
+    'aria-atomic': 'true',
+  });
+
   const statusBar = el('div', { className: 'asc-status', 'aria-live': 'polite', 'aria-atomic': 'true' });
 
   const resultsEl = el('div', {
@@ -123,10 +131,17 @@
     'aria-modal': 'true',
     'aria-label': i18n.drawerLabel || '\u05d7\u05d9\u05e4\u05d5\u05e9 \u05de\u05d5\u05e6\u05e8\u05d9\u05dd',
     dir: 'rtl',
-  }, header, aiBar, statusBar, resultsEl, chipsEl);
+  }, header, aiBar, assistantEl, statusBar, resultsEl, chipsEl);
+
+  /* ---- Options modal (R4) ---- */
+  var modalOverlayEl = el('div', { className: 'asc-modal-overlay', 'aria-hidden': 'true' });
+  var modalEl        = el('div', { className: 'asc-modal', role: 'dialog', 'aria-modal': 'true', dir: 'rtl' });
+  modalOverlayEl.addEventListener('click', closeOptionsModal);
 
   document.body.appendChild(overlay);
   document.body.appendChild(drawer);
+  document.body.appendChild(modalOverlayEl);
+  document.body.appendChild(modalEl);
 
   /* ---- Open / Close ---- */
   function detectSiteHeaderHeight() {
@@ -161,6 +176,8 @@
     document.body.style.overflow = '';
     if (phTimer) { clearInterval(phTimer); phTimer = null; }
     cancelPending();
+    clearAssistant();
+    closeOptionsModal();
     var native = document.querySelector('.asc-native-hidden-input, input[name="s"]');
     if (native) native.focus();
   }
@@ -211,13 +228,14 @@
       clearResults();
       hideAiBar();
       clearChips();
+      clearAssistant();
       return;
     }
     renderSkeletons(INITIAL_SHOW);
     searchTimer = setTimeout(function () { runSearch(q); }, 300);
   });
 
-  /* ---- Two-track search ---- */
+  /* ---- Two-track search + assistant (R4) ---- */
   function runSearch(q) {
     currentQuery = q;
     currentAll   = [];
@@ -225,13 +243,24 @@
     fullDone     = false;
     cancelPending();
     clearChips();
+    clearAssistant();
     setStatus('');
     renderSkeletons(INITIAL_SHOW);
-    hideAiBar();
+    showAiBar(); // show spinner until assistant or results land
 
     var abortA = newAbort();
     var abortB = newAbort();
-    aborts = [abortA, abortB];
+    var abortC = newAbort();
+    aborts = [abortA, abortB, abortC];
+
+    /* Track C: assistant only — fastest, fires before products */
+    fetchAssistant(q, { signal: abortC.signal })
+      .then(function (data) {
+        if (currentQuery !== q) return;
+        hideAiBar();
+        if (data && data.assistant) showAssistant(data.assistant);
+      })
+      .catch(function () { /* assistant failures are silent */ });
 
     /* Track B: full AI search — fires immediately */
     fetchSearch(q, { signal: abortB.signal, perPage: 12 })
@@ -239,17 +268,24 @@
         if (currentQuery !== q) return;
         fullDone = true;
         try { abortA.abort(); } catch(e) {}
+        try { abortC.abort(); } catch(e) {}
         hideAiBar();
+        // If search returned a richer assistant, replace the phase-C one
+        if (data && data.assistant && data.assistant.tone !== 'none' && data.assistant.message) {
+          showAssistant(data.assistant);
+        }
         renderResults(data.products || []);
-        renderChips(data.follow_ups || []);
+        // follow_ups from search response take precedence
+        var chips = data.follow_ups || (data.assistant && data.assistant.follow_ups) || [];
+        renderChips(chips);
         if (!data.products || !data.products.length) {
-          setStatus(i18n.noResults || '\u05dc\u05d0 \u05e0\u05de\u05e6\u05d0\u05d5 \u05de\u05d5\u05e6\u05e8\u05d9\u05dd');
+          setStatus(i18n.noResults || 'לא נמצאו מוצרים');
         }
       })
       .catch(function (err) {
         if (currentQuery !== q || (err && err.name === 'AbortError')) return;
         hideAiBar();
-        setStatus(i18n.errorAdding || '\u05e9\u05d2\u05d9\u05d0\u05d4', true);
+        setStatus(i18n.errorAdding || 'שגיאה', true);
       });
 
     /* Track A: provisional (fast, fewer results) — renders while B is in flight */
@@ -257,15 +293,11 @@
       .then(function (data) {
         if (currentQuery !== q || fullDone) return;
         renderResults(data.products || []);
-        /* Show AI indicator only when cloud is running */
-        if (data.source === 'cloud' || data.source === 'ai') {
-          showAiBar();
-        }
       })
       .catch(function () { /* provisional failures are silent */ });
   }
 
-  function newAbort() {
+    function newAbort() {
     if (typeof AbortController !== 'undefined') return new AbortController();
     return { signal: undefined, abort: function() {} };
   }
@@ -289,6 +321,17 @@
     });
   }
 
+  function fetchAssistant(q, opts) {
+    var url = (cfg.restUrl || '/wp-json/asc/v1') + '/assistant?q=' + encodeURIComponent(q);
+    return fetch(url, {
+      headers: { 'X-WP-Nonce': cartNonce },
+      signal:  opts && opts.signal,
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
   /* ---- AI indicator ---- */
   function showAiBar() {
     var phase = 0;
@@ -303,6 +346,23 @@
   function hideAiBar() {
     aiBar.classList.remove('asc-active');
     if (aiBarTimer) { clearInterval(aiBarTimer); aiBarTimer = null; }
+  }
+
+  /* ---- Assistant message (R4) ---- */
+  function showAssistant(asst) {
+    if (!asst || asst.tone === 'none' || !asst.message) {
+      assistantEl.classList.remove('asc-assistant-visible');
+      assistantEl.textContent = '';
+      return;
+    }
+    var icon = asst.tone === 'answer' ? 'ℹ️ ' : asst.tone === 'clarify' ? '❓ ' : '✨ ';
+    assistantEl.textContent = icon + asst.message;
+    assistantEl.classList.add('asc-assistant-visible');
+  }
+
+  function clearAssistant() {
+    assistantEl.classList.remove('asc-assistant-visible');
+    assistantEl.textContent = '';
   }
 
   /* ---- Render results ---- */
@@ -411,47 +471,49 @@
       bodyChildren.push(varWrapper);
     }
 
-    /* Quantity — pre-fill with AI suggest_qty if present */
-    var initQty = (p.suggest_qty && p.suggest_qty > 1) ? String(p.suggest_qty) : '1';
-    var qtyInput = el('input', {
-      type:         'number',
-      className:    'asc-qty-input',
-      value:        initQty,
-      min:          '1',
-      max:          '99',
-      'aria-label': i18n.quantity || '\u05db\u05de\u05d5\u05ea',
-    });
-    var qtyMinus = el('button', { type: 'button', className: 'asc-qty-btn', 'aria-label': '\u2212' }, '\u2212');
-    var qtyPlus  = el('button', { type: 'button', className: 'asc-qty-btn', 'aria-label': '+' }, '+');
-    qtyMinus.addEventListener('click', function () {
-      var v = parseInt(qtyInput.value, 10) || 1;
-      if (v > 1) qtyInput.value = v - 1;
-    });
-    qtyPlus.addEventListener('click', function () {
-      var v = parseInt(qtyInput.value, 10) || 1;
-      qtyInput.value = v + 1;
-    });
-    var qtyWrapper = el('div', { className: 'asc-qty-wrapper' }, qtyMinus, qtyInput, qtyPlus);
-
-    var addBtn = el('button', {
-      type:         'button',
-      className:    'asc-add-btn',
-      'data-id':    String(p.id),
-      disabled:     p.in_stock ? null : 'disabled',
-      'aria-label': (i18n.addToCart || '\u05d4\u05d5\u05e1\u05e3 \u05dc\u05e1\u05dc') + ': ' + p.name,
-    }, i18n.addToCart || '\u05d4\u05d5\u05e1\u05e3 \u05dc\u05e1\u05dc');
-
-    addBtn.addEventListener('click', function () {
-      var qty = parseInt(qtyInput.value, 10) || 1;
-      var variationId = findVariationId(p, selectedAttrs);
-      if (p.type === 'variable' && !variationId) {
-        setStatus(i18n.selectOptions || '\u05d1\u05d7\u05e8 \u05d0\u05ea \u05db\u05dc \u05d4\u05d0\u05e4\u05e9\u05e8\u05d5\u05d9\u05d5\u05ea', true);
-        return;
-      }
-      addToCart(p, qty, variationId, addBtn, selectedAttrs);
-    });
-
-    bodyChildren.push(el('div', { className: 'asc-card-actions' }, qtyWrapper, addBtn));
+    /* R4: requires_options → 'אפשרויות' button + modal; else folded qty+add */
+    if (p.requires_options) {
+      /* Weighted/option product — show אפשרויות button, no inline qty */
+      var optBtn = el('button', {
+        type:         'button',
+        className:    'asc-options-btn',
+        'aria-label': 'בחר אפשרויות עבור: ' + p.name,
+      }, 'אפשרויות');
+      optBtn.addEventListener('click', function () { openOptionsModal(p); });
+      bodyChildren.push(el('div', { className: 'asc-card-actions' }, optBtn));
+    } else {
+      /* Standard product — folded qty stepper inside add-to-cart row */
+      var initQty = (p.suggest_qty && p.suggest_qty > 1) ? String(p.suggest_qty) : '1';
+      var qtyVal = parseInt(initQty, 10) || 1;
+      var qtyDisplay = el('span', { className: 'asc-qty-num' }, String(qtyVal));
+      var qtyMinus = el('button', { type: 'button', className: 'asc-qty-side asc-qty-minus', 'aria-label': 'פחת' }, '−');
+      var qtyPlus  = el('button', { type: 'button', className: 'asc-qty-side asc-qty-plus',  'aria-label': 'יותר' }, '+');
+      qtyMinus.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (qtyVal > 1) { qtyVal--; qtyDisplay.textContent = String(qtyVal); }
+      });
+      qtyPlus.addEventListener('click', function (e) {
+        e.stopPropagation();
+        qtyVal++;
+        qtyDisplay.textContent = String(qtyVal);
+      });
+      var addLabel = el('span', { className: 'asc-add-label' },
+        i18n.addToCart || 'הוסף לסל'
+      );
+      var addBtn = el('button', {
+        type:         'button',
+        className:    'asc-add-btn asc-add-qty-row',
+        'data-id':    String(p.id),
+        disabled:     p.in_stock ? null : 'disabled',
+        'aria-label': (i18n.addToCart || 'הוסף לסל') + ': ' + p.name,
+      }, qtyMinus, addLabel, qtyDisplay, qtyPlus);
+      addBtn.addEventListener('click', function (e) {
+        // ignore clicks on the +/- side buttons (they have their own listeners)
+        if (e.target === qtyMinus || e.target === qtyPlus) return;
+        addToCart(p, qtyVal, null, addBtn, {});
+      });
+      bodyChildren.push(el('div', { className: 'asc-card-actions' }, addBtn));
+    }
 
     var body = el.apply(null, ['div', { className: 'asc-card-body' }].concat(bodyChildren));
     return el('div', { className: 'asc-card', role: 'listitem', tabindex: '0' }, imgEl, body);
@@ -473,6 +535,76 @@
       if (match) return v.variation_id;
     }
     return null;
+  }
+
+  /* ---- Options modal (R4) ---- */
+  function openOptionsModal(product) {
+    modalEl.innerHTML = '';
+
+    // Header
+    var closeBtn = el('button', { type: 'button', className: 'asc-modal-close', 'aria-label': 'סגור' }, '×');
+    closeBtn.addEventListener('click', closeOptionsModal);
+    var title = el('div', { className: 'asc-modal-title' }, product.name || '');
+    var hdr = el('div', { className: 'asc-modal-header' }, closeBtn, title);
+
+    var body = el('div', { className: 'asc-modal-body' });
+    var loadMsg = el('div', { className: 'asc-modal-loading' }, 'טוען...');
+    body.appendChild(loadMsg);
+
+    modalEl.appendChild(hdr);
+    modalEl.appendChild(body);
+    modalOverlayEl.classList.add('asc-modal-open');
+    modalEl.classList.add('asc-modal-open');
+    document.body.style.overflow = 'hidden';
+
+    // Load full product details
+    var url = (cfg.restUrl || '/wp-json/asc/v1') + '/product/' + product.id;
+    fetch(url, { headers: { 'X-WP-Nonce': cartNonce } })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (p) {
+        body.innerHTML = '';
+        // Price
+        var priceEl = el('div', { className: 'asc-modal-price' });
+        priceEl.innerHTML = p.price_display || p.price_html || '';
+        body.appendChild(priceEl);
+        // Attributes (ברירת חיתוך etc.)
+        var selectedAttrs = {};
+        if (p.attributes && p.attributes.length) {
+          p.attributes.forEach(function (attr) {
+            var label = el('label', { className: 'asc-modal-attr-label' }, attr.label || attr.name || '');
+            var sel = el('select', { className: 'asc-modal-attr-select', 'aria-label': attr.label || attr.name || '' });
+            sel.appendChild(el('option', { value: '' }, (attr.label || attr.name) + '...'));
+            (attr.options || []).forEach(function (opt) {
+              sel.appendChild(el('option', { value: opt }, opt));
+            });
+            sel.addEventListener('change', function () { selectedAttrs[attr.name] = sel.value; });
+            body.appendChild(label);
+            body.appendChild(sel);
+          });
+        } else {
+          // No WC attributes — link to product page
+          var link = el('a', { href: product.options_url || p.permalink, className: 'asc-modal-link', target: '_blank' }, 'ראה מוצר מלא ↗️');
+          body.appendChild(link);
+        }
+        // Add to cart
+        var addBtn = el('button', { type: 'button', className: 'asc-modal-add-btn', disabled: p.in_stock ? null : 'disabled' }, 'הוסף לסל');
+        addBtn.addEventListener('click', function () {
+          addToCart(p, 1, null, addBtn, selectedAttrs);
+        });
+        body.appendChild(addBtn);
+      })
+      .catch(function () {
+        body.innerHTML = '';
+        var link = el('a', { href: product.options_url || product.permalink, className: 'asc-modal-link', target: '_blank' }, 'ראה מוצר מלא ↗️');
+        body.appendChild(link);
+      });
+  }
+
+  function closeOptionsModal() {
+    modalOverlayEl.classList.remove('asc-modal-open');
+    modalEl.classList.remove('asc-modal-open');
+    if (isOpen) return; // keep body overflow hidden if drawer is open
+    document.body.style.overflow = '';
   }
 
   /* ---- Follow-up chips ---- */

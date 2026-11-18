@@ -8,6 +8,8 @@ export const IntentTypeSchema = z.enum([
   'category_browse',
   'specific_product',
   'occasion_shopping',
+  'question_answering',
+  'substitute_request',
 ]);
 export type IntentType = z.infer<typeof IntentTypeSchema>;
 
@@ -35,6 +37,28 @@ export const IntentResultSchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 export type IntentResult = z.infer<typeof IntentResultSchema>;
+
+// ── AssistantResponse ────────────────────────────────────────────────────────
+
+export const AssistantToneSchema = z.enum(['answer', 'clarify', 'suggest', 'none']);
+export type AssistantTone = z.infer<typeof AssistantToneSchema>;
+
+export const AssistantResponseSchema = z.object({
+  message: z.string(),
+  tone: AssistantToneSchema,
+  follow_ups: z.array(z.string()),
+});
+export type AssistantResponse = z.infer<typeof AssistantResponseSchema>;
+
+// ── SubstituteInfo ───────────────────────────────────────────────────────────
+
+export const SubstituteInfoSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  reason: z.string(),
+  differences: z.array(z.string()),
+});
+export type SubstituteInfo = z.infer<typeof SubstituteInfoSchema>;
 
 // ── SearchPlan ──────────────────────────────────────────────────────────────
 
@@ -83,14 +107,20 @@ export const RankedProductSchema = z.object({
   permalink: z.string().url(),
   image: z.string().url(),
   price_html: z.string(),
+  // price_display is price_html — always use this, never prices.price (lies for weighted products)
+  price_display: z.string().optional(),
   in_stock: z.boolean(),
   stock_status: z.string().optional(),
   type: z.string(),
   is_weighted: z.boolean().optional(),
   price_note: z.string().optional(),
+  // requires_options: true when add_to_cart.text === "Select options" — the ONLY reliable flag
+  requires_options: z.boolean().optional(),
+  options_url: z.string().url().optional(),
   ai_rank: z.number().int().min(1).optional(),
   ai_reason: z.string().optional(),
   suggest_qty: z.number().int().min(1).optional(),
+  substitutes: z.array(SubstituteInfoSchema).optional(),
   inferred_attrs: z.array(InferredAttrSchema).optional(),
   add_to_cart_url: z.string().url().optional(),
   attributes: z.array(z.unknown()).optional(),
@@ -139,8 +169,8 @@ export interface DebugTrace {
   };
 }
 
-// ── Vertex AI response schema (OpenAPI subset Gemini accepts) ───────────────
-// Used as responseSchema in generateContent calls — not the same as the Zod schemas above.
+// ── Vertex AI response schemas (OpenAPI subset Gemini accepts) ───────────────
+// These are sent as responseSchema in generateContent — not the same as Zod schemas above.
 
 export const INTENT_RESPONSE_SCHEMA = {
   type: 'OBJECT',
@@ -149,7 +179,15 @@ export const INTENT_RESPONSE_SCHEMA = {
     query_original: { type: 'STRING' },
     intent_type: {
       type: 'STRING',
-      enum: ['recipe_planning', 'ingredient_search', 'category_browse', 'specific_product', 'occasion_shopping'],
+      enum: [
+        'recipe_planning',
+        'ingredient_search',
+        'category_browse',
+        'specific_product',
+        'occasion_shopping',
+        'question_answering',
+        'substitute_request',
+      ],
     },
     keywords: { type: 'ARRAY', items: { type: 'STRING' } },
     filters: {
@@ -172,5 +210,15 @@ export const INTENT_RESPONSE_SCHEMA = {
       },
     },
     confidence: { type: 'NUMBER' },
+  },
+} as const;
+
+export const ASSISTANT_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  required: ['message', 'tone', 'follow_ups'],
+  properties: {
+    message: { type: 'STRING' },
+    tone: { type: 'STRING', enum: ['answer', 'clarify', 'suggest', 'none'] },
+    follow_ups: { type: 'ARRAY', items: { type: 'STRING' } },
   },
 } as const;
