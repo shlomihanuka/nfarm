@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>ASC V3 Knowledge R2 — Enrichment Report</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;max-width:1100px;margin:0 auto;padding:24px 16px;background:#f8f9fa;direction:rtl;color:#212529}
+h1{color:#1a237e;margin-bottom:4px}
+.meta{color:#666;font-size:13px;margin-bottom:24px}
+h2{color:#283593;border-bottom:2px solid #3f51b5;padding-bottom:6px;margin-top:36px}
+h3{color:#37474f;margin-bottom:8px}
+.summary-box{background:#e8eaf6;border:1px solid #c5cae9;border-radius:8px;padding:16px;margin-bottom:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.stat{text-align:center}.stat-num{font-size:2em;font-weight:bold;color:#1a237e}.stat-lbl{font-size:11px;color:#555;margin-top:2px}
+.product-card{background:#fff;border:1px solid #c5cae9;border-radius:8px;padding:16px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.product-header{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.product-name{font-size:1.05em;font-weight:bold;color:#1a237e}
+.product-meta{color:#666;font-size:12px}
+.verified-box{background:#f1f8e9;border:1px solid #aed581;border-radius:6px;padding:10px;margin-bottom:10px;font-size:12px}
+.verified-title{font-weight:bold;color:#33691e;margin-bottom:4px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:5px 8px;border:1px solid #e0e0e0;font-size:12px;text-align:right}
+th{background:#e8eaf6;color:#283593;font-weight:600}
+.conf-bar{display:inline-block;height:8px;background:#3f51b5;border-radius:4px;min-width:2px}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-review{background:#fff3cd;color:#856404}
+.badge-safe{background:#d4edda;color:#155724}
+.badge-null{background:#f5f5f5;color:#888}
+.review-summary{font-size:12px;color:#666;margin-top:8px}
+.review-fields{font-size:11px;color:#9e9e9e;margin-top:3px}
+.section-substitutes{}
+.sub-card{background:#fffde7;border:1px solid #ffe082;border-radius:6px;padding:14px;margin-bottom:14px}
+.sub-route{font-size:1.05em;font-weight:bold;color:#e65100;margin-bottom:8px}
+.sub-label{font-weight:bold;color:#37474f;min-width:90px;display:inline-block}
+.sub-text{color:#212529}
+.conf-chip{background:#fff8e1;border:1px solid #ffcc02;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:bold;color:#e65100}
+.recipe-card{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:14px;margin-bottom:14px}
+.recipe-name{font-weight:bold;color:#1b5e20;font-size:1.05em}
+.ing-matched{color:#2e7d32;font-weight:600}
+.ing-unmatched{color:#9e9e9e}
+.safety-box{background:#ffebee;border:2px solid #ef9a9a;border-radius:8px;padding:14px;margin-bottom:16px}
+.safety-title{font-weight:bold;color:#c62828;margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<h1>ASC Catalog Intelligence — V3 Knowledge R2</h1>
+<div class="meta">Generated: 2026-11-18 &nbsp;|&nbsp; Branch: <code>feat/v3-knowledge-r2</code> &nbsp;|&nbsp; Plugin: v0.2.0 &nbsp;|&nbsp; Enrichment tier: stub (heuristic from WooCommerce data, no external APIs)</div>
+
+<div class="summary-box">
+  <div class="stat"><div class="stat-num">10</div><div class="stat-lbl">מוצרים עובדו</div></div>
+  <div class="stat"><div class="stat-num">120</div><div class="stat-lbl">שדות inferred</div></div>
+  <div class="stat"><div class="stat-num">120</div><div class="stat-lbl">שדות לבדיקה (100% — stub tier)</div></div>
+  <div class="stat"><div class="stat-num">0</div><div class="stat-lbl">אלרגנים/רכיבים שהוסקו (עקרון בטיחות)</div></div>
+  <div class="stat"><div class="stat-num">4</div><div class="stat-lbl">תחליפים במאגר</div></div>
+  <div class="stat"><div class="stat-num">3</div><div class="stat-lbl">מתכונים עם קישור מוצרים</div></div>
+</div>
+
+<div class="safety-box">
+  <div class="safety-title">⚠ עקרון בטיחות — אף פעם לא יופעל אוטומטית</div>
+  <strong>אלרגנים ורכיבים לא יוסקו לעולם</strong> מהשם, הקטגוריה, התיאור, או מתמונה.<br>
+  כל שדה אלרגנים ורכיבים מוחזר עם: <code>value=[], confidence=0, source="stub:safety_blank", review_required=true</code>.<br>
+  <strong>תחליף ללא reason וללא differences = לא יישמר במאגר.</strong> כל תחליף נושא הסבר מדוע הוא עובד ומה משתנה לטבח.
+</div>
+
+<h2>פרופילי עשרה מוצרים — Enrichment Profiles</h2>
+
+<!-- Product 1001: פרמזן -->
+<div class="product-card">
+<div class="product-header">
+  <span class="product-name">גבינת פרמזן מגורדת (250ג)</span>
+  <span class="product-meta">SKU: CH-PARM-250 &nbsp;·&nbsp; ₪32.90 &nbsp;·&nbsp; ID #1001</span>
+</div>
+<div class="verified-box"><div class="verified-title">Verified (from WooCommerce)</div>name, sku, price, weight, in_stock, categories: [גבינות, cheese] · source: woocommerce · no inference</div>
+<table>
+  <tr><th>שדה (inferred)</th><th>ערך</th><th>מקור הסקה</th><th>ביטחון</th><th>review_required</th></tr>
+  <tr><td>product_type</td><td>cheese</td><td>stub:category_name_heuristic</td><td><div class="conf-bar" style="width:65px"></div> 65%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>sub_type</td><td>hard_cheese</td><td>stub:name_keyword (פרמזן→parmesan)</td><td><div class="conf-bar" style="width:70px"></div> 70%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>flavor_profile</td><td>sharp</td><td>stub:sub_type_heuristic</td><td><div class="conf-bar" style="width:50px"></div> 50%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>texture</td><td>hard</td><td>stub:sub_type_heuristic</td><td><div class="conf-bar" style="width:65px"></div> 65%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>meltable</td><td>true</td><td>stub:sub_type_heuristic</td><td><div class="conf-bar" style="width:75px"></div> 75%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>storage_method</td><td>refrigerated</td><td>stub:product_type_heuristic</td><td><div class="conf-bar" style="width:80px"></div> 80%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>origin_country</td><td>null</td><td>stub:needs_verified_source</td><td>0%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>milk_type</td><td>null</td><td>stub:needs_verified_source</td><td>0%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>kosher_certification</td><td>null</td><td>stub:no_mention_found</td><td>0%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>allergens</td><td>[]</td><td>stub:safety_blank</td><td><span class="badge badge-safe">0% — SAFETY</span></td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>ingredients</td><td>[]</td><td>stub:safety_blank</td><td><span class="badge badge-safe">0% — SAFETY</span></td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>servings_per_pack</td><td>4</td><td>stub:constant_fallback</td><td>0%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+</table>
+<div class="review-summary">needs_review: <strong>12/12</strong> (stub tier — all inferred fields require human confirmation)</div>
+</div>
+
+<!-- Product 1002: מוצרלה -->
+<div class="product-card">
+<div class="product-header">
+  <span class="product-name">מוצרלה טריה (250ג)</span>
+  <span class="product-meta">SKU: CH-MOZZ-250 &nbsp;·&nbsp; ₪24.50 &nbsp;·&nbsp; ID #1002</span>
+</div>
+<div class="verified-box"><div class="verified-title">Verified (from WooCommerce)</div>name, sku, price, weight, in_stock, categories: [גבינות, cheese] · source: woocommerce</div>
+<table>
+  <tr><th>שדה (inferred)</th><th>ערך</th><th>מקור הסקה</th><th>ביטחון</th><th>review_required</th></tr>
+  <tr><td>product_type</td><td>cheese</td><td>stub:category_name_heuristic</td><td>65%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>sub_type</td><td>fresh_cheese</td><td>stub:name_keyword (מוצרלה)</td><td>70%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>flavor_profile</td><td>mild</td><td>stub:sub_type_heuristic</td><td>50%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>texture</td><td>soft</td><td>stub:sub_type_heuristic</td><td>65%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>meltable</td><td>false</td><td>stub:sub_type_heuristic (fresh_cheese)</td><td>60%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>storage_method</td><td>refrigerated</td><td>stub:product_type_heuristic</td><td>80%</td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>allergens</td><td>[]</td><td>stub:safety_blank</td><td><span class="badge badge-safe">SAFETY</span></td><td><span class="badge badge-review">✗ review</span></td></tr>
+  <tr><td>ingredients</td><td>[]</td><td>stub:safety_blank</td><td><span class="badge badge-safe">SAFETY</span></td><td><span class="badge badge-review">✗ review</span></td></tr>
+</table>
+</div>
+
+<!-- Product 1003: גאודה -->
+<div class="product-card">
+<div class="product-header">
+  <span class="product-name">גבינת גאודה צהובה (200ג)</span>
+  <span class="product-meta">SKU: CH-GOUD-200 &nbsp;·&nbsp; ₪18.90 &nbsp;·&nbsp; ID #1003</span>
+</div>
+<table>
+  <tr><th>שדה</th><th>ערך</th><th>מקור</th><th>ביטחון</th><th>review</th></tr>
+  <tr><td>product_type</td><td>cheese</td><td>stub:category_name_heuristic</td><td>65%</td><td><span class="badge badge-review">✗</span></td></tr>
+  <tr><td>sub_type</td><td>semi_hard_cheese</td><td>stub:name_keyword (גאודה)</td><td>70%</td><td><span class="badge badge-review">✗</span></td></tr>
+  <tr><td>flavor_profile</td><td>null</td><td>stub:no_match (no flavor map for semi_hard)</td><td>0%</td><td><span class="badge badge-review">✗</span></td></tr>
+  <tr><td>texture</td><td>semi_hard</td><td>stub:sub_type_heuristic</td><td>65%</td><td><span class="badge badge-review">✗</span></td></tr>
+  <tr><td>meltable</td><td>true</td><td>stub:sub_type_heuristic (semi_hard_cheese)</td><td>80%</td><td><span class="badge badge-review">✗</span></td></tr>
+  <tr><td>storage_method</td><td>refrigerated</td><td>stub:product_type_heuristic</td><td>80%</td><td><span class="badge badge-review">✗</span></td></tr>
+</table>
+</div>
+
+<!-- Product 1004: פטה -->
+<div class="product-card">
+<div class="product-header">
+  <span class="product-name">גבינת פטה יוונית בציר (200ג)</span>
+  <span class="product-meta">SKU: CH-FETA-200 &nbsp;·&nbsp; ₪22.00 &nbsp;·&nbsp; ID #1004</span>
+</div>
+<table>
+  <tr><th>שדה</th><th>ערך</th><th>מקור</th><th>ביטחון</th><th>review</th></tr>
+  <tr><td>product_type</td><td>cheese</td><td>stub:category_name_heuristic</td><td>65%</td><td><span class="badge badge-review">✗</span></td></tr>
+  <tr><td>sub_type</td><td>brined_cheese</td><td>stub:name_keyword (פטה)</td><td>70%</td><td><span class="badge badge-review">✗</span></td></tr>
+  <tr><td>flavor_profile</td><td>salty</td><td>stub:sub_type_heuristic</td><td>50%</td><td><span class="badge badge-review">✗</span></td></tr>
+  <tr><td>texture</td><td>crumbly</td><td>stub:sub_type_heuristic</td><td>65%</td><td><span class="badge badge-review">✗</span></td></tr>
+  <tr><td>meltable</td><td>false</td><td>stub:sub_type_heuristic (brined_cheese)</td><td>65%</td><td><span class="badge badge-review">✗</span></td></tr>
+  <tr><td>storage_method</td><td>refrigerated</td><td>stub:product_type_heuristic</td><td>80%</td><td><span class="badge badge-review">✗</span></td></tr>
+</table>
+</div>
+
+<!-- Products 1005-1010 condensed -->
+<div class="product-card">
+<div class="product-header"><span class="product-name">קממבר צרפתי (125ג)</span><span class="product-meta">SKU: CH-CAMB-125 &nbsp;·&nbsp; ₪29.90 &nbsp;·&nbsp; ID #1005</span></div>
+<table><tr><th>שדה</th><th>ערך</th><th>ביטחון</th></tr>
+<tr><td>product_type</td><td>cheese</td><td>65%</td></tr>
+<tr><td>sub_type</td><td>soft_cheese</td><td>70% (קממבר→camembert)</td></tr>
+<tr><td>flavor_profile</td><td>creamy</td><td>50%</td></tr>
+<tr><td>texture</td><td>soft</td><td>65%</td></tr>
+<tr><td>meltable</td><td>false</td><td>50% (soft_cheese)</td></tr>
+<tr><td>storage_method</td><td>refrigerated</td><td>80%</td></tr></table>
+</div>
+
+<div class="product-card">
+<div class="product-header"><span class="product-name">צ'דר ישן מיושן (200ג)</span><span class="product-meta">SKU: CH-CHDR-200 &nbsp;·&nbsp; ₪21.50 &nbsp;·&nbsp; ID #1006</span></div>
+<table><tr><th>שדה</th><th>ערך</th><th>ביטחון</th></tr>
+<tr><td>product_type</td><td>cheese</td><td>65%</td></tr>
+<tr><td>sub_type</td><td>semi_hard_cheese</td><td>70% (צ'דר→cheddar)</td></tr>
+<tr><td>flavor_profile</td><td>null — semi_hard has no flavor map</td><td>0%</td></tr>
+<tr><td>texture</td><td>semi_hard</td><td>65%</td></tr>
+<tr><td>meltable</td><td>true</td><td>80%</td></tr>
+<tr><td>storage_method</td><td>refrigerated</td><td>80%</td></tr></table>
+</div>
+
+<div class="product-card">
+<div class="product-header"><span class="product-name">ריקוטה איטלקית (250ג)</span><span class="product-meta">SKU: CH-RICO-250 &nbsp;·&nbsp; ₪16.90 &nbsp;·&nbsp; ID #1007</span></div>
+<table><tr><th>שדה</th><th>ערך</th><th>ביטחון</th></tr>
+<tr><td>product_type</td><td>cheese</td><td>65%</td></tr>
+<tr><td>sub_type</td><td>fresh_cheese</td><td>70% (ריקוטה→ricotta)</td></tr>
+<tr><td>flavor_profile</td><td>mild</td><td>50%</td></tr>
+<tr><td>texture</td><td>soft</td><td>65%</td></tr>
+<tr><td>meltable</td><td>false</td><td>60%</td></tr>
+<tr><td>storage_method</td><td>refrigerated</td><td>80%</td></tr></table>
+</div>
+
+<div class="product-card">
+<div class="product-header"><span class="product-name">גרויאר שוויצרי (200ג)</span><span class="product-meta">SKU: CH-GRUY-200 &nbsp;·&nbsp; ₪35.90 &nbsp;·&nbsp; ID #1008</span></div>
+<table><tr><th>שדה</th><th>ערך</th><th>ביטחון</th></tr>
+<tr><td>product_type</td><td>cheese</td><td>65%</td></tr>
+<tr><td>sub_type</td><td>semi_hard_cheese</td><td>70% (גרויאר→gruyere)</td></tr>
+<tr><td>flavor_profile</td><td>null</td><td>0%</td></tr>
+<tr><td>texture</td><td>semi_hard</td><td>65%</td></tr>
+<tr><td>meltable</td><td>true</td><td>80%</td></tr>
+<tr><td>storage_method</td><td>refrigerated</td><td>80%</td></tr></table>
+</div>
+
+<div class="product-card">
+<div class="product-header"><span class="product-name">גבינה בולגרית (200ג)</span><span class="product-meta">SKU: CH-BULG-200 &nbsp;·&nbsp; ₪14.90 &nbsp;·&nbsp; ID #1009</span></div>
+<table><tr><th>שדה</th><th>ערך</th><th>ביטחון</th></tr>
+<tr><td>product_type</td><td>cheese</td><td>65%</td></tr>
+<tr><td>sub_type</td><td>brined_cheese</td><td>70% (בולגרית→bulgarian)</td></tr>
+<tr><td>flavor_profile</td><td>salty</td><td>50%</td></tr>
+<tr><td>texture</td><td>crumbly</td><td>65%</td></tr>
+<tr><td>meltable</td><td>false</td><td>65%</td></tr>
+<tr><td>storage_method</td><td>refrigerated</td><td>80%</td></tr></table>
+</div>
+
+<div class="product-card">
+<div class="product-header"><span class="product-name">גבינת שמנת להברשה (200ג)</span><span class="product-meta">SKU: CH-CREM-200 &nbsp;·&nbsp; ₪11.90 &nbsp;·&nbsp; ID #1010</span></div>
+<table><tr><th>שדה</th><th>ערך</th><th>ביטחון</th></tr>
+<tr><td>product_type</td><td>cheese</td><td>65%</td></tr>
+<tr><td>sub_type</td><td>processed_cheese</td><td>70% (spread→ממרח)</td></tr>
+<tr><td>flavor_profile</td><td>mild</td><td>50%</td></tr>
+<tr><td>texture</td><td>soft</td><td>65%</td></tr>
+<tr><td>meltable</td><td>true</td><td>88% (processed_cheese)</td></tr>
+<tr><td>storage_method</td><td>refrigerated</td><td>80%</td></tr></table>
+</div>
+
+<h2>Knowledge Graph — Substitutes</h2>
+<p>כל תחליף נושא <strong>reason</strong> (מדוע הוא עובד) ו-<strong>differences</strong> (מה משתנה לטבח). תחליף ללא שניהם לא יישמר ב-DB — כך לפי Doc 3 §7 (line 2674).</p>
+
+<div class="sub-card">
+  <div class="sub-route">#1001 פרמזן &rarr; #1008 גרויאר &nbsp; <span class="conf-chip">confidence 78% · review_required</span></div>
+  <div><span class="sub-label">סיבה:</span> <span class="sub-text">Both are hard cheeses with strong umami and nuttiness, suitable for grating over pasta and baked dishes.</span></div>
+  <div style="margin-top:6px"><span class="sub-label">הבדלים:</span> <span class="sub-text">Gruyere melts more smoothly; Parmesan has stronger salt and nuttiness; Gruyere lacks Parmesan's grainy texture.</span></div>
+  <div style="margin-top:6px"><small>relation_type: substitute &nbsp;·&nbsp; source: manual_seed &nbsp;·&nbsp; review_required: true</small></div>
+</div>
+
+<div class="sub-card">
+  <div class="sub-route">#1002 מוצרלה &rarr; #1007 ריקוטה &nbsp; <span class="conf-chip">confidence 70% · review_required</span></div>
+  <div><span class="sub-label">סיבה:</span> <span class="sub-text">Both are fresh Italian cheeses with mild, milky flavor; both work in pizza, pasta, and baked dishes.</span></div>
+  <div style="margin-top:6px"><span class="sub-label">הבדלים:</span> <span class="sub-text">Ricotta is grainy and spreadable; Mozzarella has smooth stretch when melted; substituting Ricotta changes dish texture.</span></div>
+  <div style="margin-top:6px"><small>relation_type: substitute &nbsp;·&nbsp; source: manual_seed &nbsp;·&nbsp; review_required: true</small></div>
+</div>
+
+<div class="sub-card">
+  <div class="sub-route">#1004 פטה &rarr; #1009 בולגרית &nbsp; <span class="conf-chip">confidence 82% · review_required</span></div>
+  <div><span class="sub-label">סיבה:</span> <span class="sub-text">Both are brined white cheeses with salty, tangy flavor suitable for salads, mezze, and grain bowls.</span></div>
+  <div style="margin-top:6px"><span class="sub-label">הבדלים:</span> <span class="sub-text">Bulgarian is creamier and milder; Feta is drier and more crumbly; adjust salt in the recipe when substituting.</span></div>
+  <div style="margin-top:6px"><small>relation_type: substitute &nbsp;·&nbsp; source: manual_seed &nbsp;·&nbsp; review_required: true</small></div>
+</div>
+
+<div class="sub-card">
+  <div class="sub-route">#1006 צ'דר &rarr; #1003 גאודה &nbsp; <span class="conf-chip">confidence 75% · review_required</span></div>
+  <div><span class="sub-label">סיבה:</span> <span class="sub-text">Both are semi-hard cheeses that melt well, suitable for grilled dishes, burgers, and baked toppings.</span></div>
+  <div style="margin-top:6px"><span class="sub-label">הבדלים:</span> <span class="sub-text">Cheddar is sharper and more acidic; Gouda is creamier and slightly sweeter; Gouda melts more smoothly.</span></div>
+  <div style="margin-top:6px"><small>relation_type: substitute &nbsp;·&nbsp; source: manual_seed &nbsp;·&nbsp; review_required: true</small></div>
+</div>
+
+<h2>Knowledge Graph — 8 Relation Types (Doc 4 §6.1)</h2>
+<table>
+<tr><th>סוג קשר</th><th>תיאור</th><th>דרישה מיוחדת</th></tr>
+<tr><td><code>substitute</code></td><td>מוצר B יכול להחליף מוצר A</td><td><strong>חובה: reason + differences שניהם</strong></td></tr>
+<tr><td><code>similar_to</code></td><td>אותה משפחה, מאפיינים דומים</td><td>—</td></tr>
+<tr><td><code>pairs_with</code></td><td>משלימים זה את זה באותה מנה</td><td>—</td></tr>
+<tr><td><code>complementary_to</code></td><td>קטגוריה שונה, מעשיר את המוצר העיקרי</td><td>—</td></tr>
+<tr><td><code>recipe_uses</code></td><td>מתכון R משתמש במוצר A כרכיב</td><td>—</td></tr>
+<tr><td><code>suitable_for</code></td><td>המוצר מתאים לשימוש/אירוע מסוים</td><td>—</td></tr>
+<tr><td><code>same_family</code></td><td>קרבה טקסונומית (אותו סוג גבינה, אותו זן)</td><td>—</td></tr>
+<tr><td><code>alternative_price_tier</code></td><td>אותו שימוש במחיר שונה</td><td>—</td></tr>
+</table>
+
+<h2>Recipe Intelligence — Doc 4 §7</h2>
+<p>מתכונים מנותחים לרכיבים; כל רכיב מקושר למוצר WooCommerce על-ידי חיפוש שם (stub tier). כל קישור הוא review_required.</p>
+
+<div class="recipe-card">
+  <div class="recipe-name">פסטה עם גבינת פרמזן ועגבניות &nbsp; <small>pasta · 4 מנות</small></div>
+  <table style="margin-top:8px">
+  <tr><th>רכיב</th><th>כמות</th><th>מוצר מקושר</th><th>ביטחון קישור</th></tr>
+  <tr><td>פסטה ספגטי</td><td>500 ג</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  <tr><td>עגבניות מרוסקות</td><td>400 ג</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  <tr><td>גבינת פרמזן מגורדת</td><td>50 ג</td><td><span class="ing-matched">#1001 גבינת פרמזן מגורדת (250ג)</span></td><td><span class="badge badge-review">65% · review</span></td></tr>
+  <tr><td>שמן זית</td><td>3 כף</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  <tr><td>שום</td><td>3 שיני</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  </table>
+  <div style="margin-top:8px;font-size:12px;color:#555">1/5 רכיבים קושרו | כל קישורים: review_required | ניתן לאחזר תחליף: פרמזן → גרויאר</div>
+</div>
+
+<div class="recipe-card">
+  <div class="recipe-name">פיצה ביתית עם מוצרלה &nbsp; <small>pizza · 4 מנות</small></div>
+  <table style="margin-top:8px">
+  <tr><th>רכיב</th><th>כמות</th><th>מוצר מקושר</th><th>ביטחון</th></tr>
+  <tr><td>קמח לחם</td><td>400 ג</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  <tr><td>רוטב עגבניות</td><td>300 ג</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  <tr><td>גבינת מוצרלה טריה</td><td>250 ג</td><td><span class="ing-matched">#1002 מוצרלה טריה (250ג)</span></td><td><span class="badge badge-review">65% · review</span></td></tr>
+  <tr><td>שמן זית</td><td>2 כף</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  </table>
+  <div style="margin-top:8px;font-size:12px;color:#555">1/4 רכיבים קושרו | תחליף: מוצרלה → ריקוטה</div>
+</div>
+
+<div class="recipe-card">
+  <div class="recipe-name">סלט יווני עם פטה &nbsp; <small>salad · 2 מנות</small></div>
+  <table style="margin-top:8px">
+  <tr><th>רכיב</th><th>כמות</th><th>מוצר מקושר</th><th>ביטחון</th></tr>
+  <tr><td>מלפפון</td><td>2 יחידות</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  <tr><td>עגבניות</td><td>3 יחידות</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  <tr><td>גבינת פטה יוונית</td><td>100 ג</td><td><span class="ing-matched">#1004 גבינת פטה יוונית בציר (200ג)</span></td><td><span class="badge badge-review">65% · review</span></td></tr>
+  <tr><td>זיתים שחורים</td><td>50 ג</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  <tr><td>שמן זית</td><td>2 כף</td><td><span class="ing-unmatched">לא קושר</span></td><td>—</td></tr>
+  </table>
+  <div style="margin-top:8px;font-size:12px;color:#555">1/5 רכיבים קושרו | תחליף: פטה → בולגרית</div>
+</div>
+
+<h2>מה צריך אישור אנושי</h2>
+<ul>
+  <li>כל 120 שדות inferred — ה-stub מייצר ביטחון 50-88% אבל review_required=true תמיד עד שאנשי צוות אושרו</li>
+  <li>כל 4 תחליפים — reason ו-differences כתובים; confidence 70-82%, review_required=true</li>
+  <li>כל 3 קישורי מתכון-רכיב-מוצר — stub:wc_name_search, confidence 65%, review_required=true</li>
+  <li>origin_country ו-milk_type — תמיד null מ-stub; דורש מקור מאומת (תווית, יצרן)</li>
+  <li>allergens ו-ingredients — תמיד safety_blank; רק תווית מאומתת או סריקה מורשית</li>
+</ul>
+
+<h2>REST API — נקודות גישה</h2>
+<table>
+<tr><th>Method</th><th>URL</th><th>פעולה</th></tr>
+<tr><td>POST</td><td>/wp-json/asc/v1/enrich/batch</td><td>הפעל enrichment על batch של מוצרים</td></tr>
+<tr><td>GET</td><td>/wp-json/asc/v1/profiles/:id</td><td>פרופיל מוצר</td></tr>
+<tr><td>GET</td><td>/wp-json/asc/v1/graph/:id/relations</td><td>כל 8 סוגי קשרים עבור מוצר</td></tr>
+<tr><td>GET</td><td>/wp-json/asc/v1/graph/:id/substitutes</td><td>תחליפים (עם reason+differences)</td></tr>
+<tr><td>POST</td><td>/wp-json/asc/v1/graph/:id/substitute</td><td>הוסף תחליף (חובה reason+differences)</td></tr>
+<tr><td>POST</td><td>/wp-json/asc/v1/graph/seed-substitutes</td><td>Seed תחליפים אוטומטי לפי subtype</td></tr>
+<tr><td>GET</td><td>/wp-json/asc/v1/recipes</td><td>רשימת מתכונים</td></tr>
+<tr><td>POST</td><td>/wp-json/asc/v1/recipes</td><td>הוסף מתכון עם רכיבים</td></tr>
+<tr><td>POST</td><td>/wp-json/asc/v1/recipes/seed</td><td>Seed מתכוני דוגמה</td></tr>
+<tr><td>POST</td><td>/wp-json/asc/v1/recipes/:id/link-products</td><td>קשר מתכון למוצרים</td></tr>
+</table>
+
+<hr>
+<p style="font-size:12px;color:#888">AI Smart Commerce Search v0.2.0 &nbsp;·&nbsp; Branch: feat/v3-knowledge-r2 &nbsp;·&nbsp; Dev-SmartSearchKnowledge &nbsp;·&nbsp; 2026-11-18</p>
+</body>
+</html>
