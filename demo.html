@@ -444,7 +444,7 @@ body {
 
 <div class="main-content">
   <div class="demo-notice">
-    🎯 <strong>DEMO — V3 UX R2</strong> — הדרואר נפתח אוטומטית כדי להראות את הממשק. לחצו על שדה החיפוש בפינה כדי לפתוח אותו שוב לאחר סגירה.
+    🎯 <strong>DEMO — V3 UX R3</strong> — הדרואר נפתח אוטומטית עם תוצאות חיפוש ל־"גבינה". לחצו על שדה החיפוש בכותרת כדי לפתוח אותו שוב לאחר סגירה.
   </div>
 
   <div class="section-title">מוצרי הבית</div>
@@ -538,7 +538,7 @@ window.ascConfig = {
               'כמה זה עולה לארוחה של 4?',
               'יש גרסא ללא לקטוז?',
             ] : [],
-          }), { headers: { 'Content-Type': 'application/json' } });
+          }), { headers: { 'Content-Type': 'application/json' } }));
         }, delay);
       });
     }
@@ -1010,6 +1010,16 @@ window.ascConfig = {
     if (typeof msg === 'string' && msg.includes('<')) statusBar.innerHTML = msg;
     else statusBar.textContent = msg;
     statusBar.className = 'asc-status' + (isError ? ' asc-error' : '');
+  }
+
+  /* ---- Mobile keyboard resize (spec §2.2 mobile) ---- */
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function() {
+      if (isOpen && window.innerWidth < 540) {
+        var vvh = Math.round(window.visualViewport.height);
+        drawer.style.maxHeight = Math.round(vvh * 0.96) + 'px';
+      }
+    });
   }
 
   /* ================================================================
