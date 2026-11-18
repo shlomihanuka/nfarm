@@ -3,7 +3,7 @@
  * Plugin Name: AI Smart Commerce Search
  * Plugin URI:  https://notax.co.il
  * Description: AI-driven search, substitutes, recommendations and purchase assistance for WooCommerce stores.
- * Version:     0.1.1
+ * Version:     0.2.0
  * Author:      MYCO
  * Text Domain: ai-smart-commerce-search
  * Domain Path: /languages
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ASC_VERSION',     '0.1.1' );
+define( 'ASC_VERSION',     '0.2.0' );
 define( 'ASC_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'ASC_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'ASC_PLUGIN_FILE', __FILE__ );

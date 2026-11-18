@@ -30,8 +30,8 @@ msgid "AI Smart Commerce Search requires WooCommerce. Please install and activat
 msgstr "חיפוש חכם לחנות דורש WooCommerce. אנא התקן והפעל אותו."
 
 #: includes/class-asc-search.php
-msgid "Search for products"
-msgstr "חפש מוצרים"
+msgid "What are you looking for? E.g. \"Shabbat dinner for five, on sale\""
+msgstr "מה אתם מחפשים? לדוגמה: \"ארוחת שבת לחמישה, במבצע\""
 
 #: includes/class-asc-search.php
 msgid "No products found"
@@ -80,6 +80,22 @@ msgstr "מחפש\xe2\x80\xa6"
 #: includes/class-asc-search.php
 msgid "Final price depends on actual weight at time of purchase."
 msgstr "המחיר הסופי נקבע לפי המשקל בפועל בעת הרכישה."
+
+#: includes/class-asc-search.php
+msgid "AI is analyzing your request\xe2\x80\xa6"
+msgstr "AI מנתח את הבקשה שלך..."
+
+#: includes/class-asc-search.php
+msgid "AI is finding relevant products\xe2\x80\xa6"
+msgstr "AI מחפש מוצרים רלוונטיים..."
+
+#: includes/class-asc-search.php
+msgid "AI is ranking results for you\xe2\x80\xa6"
+msgstr "AI מדרג את התוצאות עבורך..."
+
+#: includes/class-asc-search.php
+msgid "Show {n} more results"
+msgstr "הצג {n} תוצאות נוספות"
 
 #: includes/class-asc-cloud.php
 msgid "Cloud API URL and Project ID are required."
