@@ -27,6 +27,14 @@ class ASC_Admin {
             'asc-settings',
             [ $this, 'render_settings_page' ]
         );
+        add_submenu_page(
+            'options-general.php',
+            esc_html__( 'AI Smart Search — Knowledge', 'ai-smart-commerce-search' ),
+            esc_html__( 'AI Search: Knowledge', 'ai-smart-commerce-search' ),
+            'manage_options',
+            'asc-knowledge',
+            [ $this, 'render_knowledge_page' ]
+        );
     }
 
     public function register_settings(): void {
@@ -52,7 +60,7 @@ class ASC_Admin {
     }
 
     public function enqueue_assets( string $hook ): void {
-        if ( 'settings_page_asc-settings' !== $hook ) {
+        if ( ! in_array( $hook, [ 'settings_page_asc-settings', 'settings_page_asc-knowledge' ], true ) ) {
             return;
         }
         wp_enqueue_style(
@@ -88,6 +96,13 @@ class ASC_Admin {
             wp_die( esc_html__( 'You do not have permission to access this page.', 'ai-smart-commerce-search' ) );
         }
         require ASC_PLUGIN_DIR . 'admin/views/settings.php';
+    }
+
+    public function render_knowledge_page(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You do not have permission to access this page.', 'ai-smart-commerce-search' ) );
+        }
+        require ASC_PLUGIN_DIR . 'admin/views/knowledge.php';
     }
 
     public function ajax_save_settings(): void {

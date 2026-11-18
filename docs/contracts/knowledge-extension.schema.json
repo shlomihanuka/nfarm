@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "knowledge-extension",
+  "title": "KnowledgeExtension",
+  "description": "Knowledge lane additions to IntentResult.context. Produced by ASC_Knowledge::decompose_recipe_query() and merged into the IntentResult before POST /search is called. All fields are review_required: true — they inform search but are never presented to the user as confirmed facts.",
+  "type": "object",
+  "properties": {
+    "ingredients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "source", "confidence", "review_required"],
+        "properties": {
+          "name":            { "type": "string", "description": "Ingredient name in store language." },
+          "source":          { "type": "string", "description": "How this was derived, e.g. stub:recipe_lookup or cloud:gemini." },
+          "confidence":      { "type": "number", "minimum": 0, "maximum": 1 },
+          "review_required": { "type": "boolean", "const": true }
+        }
+      },
+      "description": "Ingredients decomposed from a recipe query. NEVER inferred from product images. review_required is always true.",
+      "default": []
+    },
+    "servings": {
+      "type": "object",
+      "required": ["value", "source", "confidence", "review_required"],
+      "properties": {
+        "value":            { "type": "integer", "minimum": 1 },
+        "source":           { "type": "string" },
+        "confidence":       { "type": "number", "minimum": 0, "maximum": 1 },
+        "review_required":  { "type": "boolean" }
+      },
+      "description": "Serving count from query. Used for quantity suggestions on product cards."
+    },
+    "occasion": {
+      "type": "object",
+      "required": ["value", "source", "confidence", "review_required"],
+      "properties": {
+        "value":            { "type": ["string", "null"] },
+        "source":           { "type": "string" },
+        "confidence":       { "type": "number", "minimum": 0, "maximum": 1 },
+        "review_required":  { "type": "boolean" }
+      }
+    },
+    "sale_preference": {
+      "type": "object",
+      "required": ["value", "source", "confidence", "review_required"],
+      "properties": {
+        "value":            { "type": "boolean" },
+        "source":           { "type": "string" },
+        "confidence":       { "type": "number", "minimum": 0, "maximum": 1 },
+        "review_required":  { "type": "boolean" }
+      },
+      "description": "Whether the user asked for sale/promotional products. No safety implications; review_required may be false."
+    }
+  }
+}
